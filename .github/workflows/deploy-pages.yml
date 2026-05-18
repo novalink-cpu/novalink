@@ -34,6 +34,14 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
+      # README.md ကို Jekyll site အဖြစ် မပြအောင် — index.html (React app) သာ deploy
+      - name: Prepare Pages artifact
+        run: |
+          test -f dist/index.html
+          touch dist/.nojekyll
+          echo "Built files:"
+          ls -la dist/
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
