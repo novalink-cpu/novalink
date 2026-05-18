@@ -12,7 +12,7 @@ function actionSecret() {
 export function signAdminAction(orderId, action) {
   return crypto
     .createHmac('sha256', actionSecret())
-    .update(`${action}:${orderId}`)
+    .update(`${action}:${String(orderId)}`)
     .digest('hex')
     .slice(0, 24);
 }

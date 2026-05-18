@@ -91,8 +91,18 @@ export function PaymentVerifyPage() {
         <div className="step-item">
           <span className="step-item__num">1</span>
           <div>
-            <p className="step-item__title">Screenshot ပြီး</p>
-            <p className="step-item__desc">ငွေပေးချေမှု Screenshot ကို တင်ပြပါ</p>
+            <p className="step-item__title">Order ID</p>
+            <p className="step-item__desc" style={{ fontWeight: 600 }}>
+              {order.id}
+            </p>
+          </div>
+        </div>
+
+        <div className="step-item" style={{ marginTop: 20 }}>
+          <span className="step-item__num">2</span>
+          <div>
+            <p className="step-item__title">Screenshot</p>
+            <p className="step-item__desc">ငွေပေးချေမှု Screenshot တင်ပြပါ</p>
           </div>
         </div>
 

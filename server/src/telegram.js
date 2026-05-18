@@ -29,22 +29,26 @@ function isAdminActor(query) {
   return config.adminChatIds.some((adminId) => adminId === fromId || adminId === chatId);
 }
 
-function adminKeyboard(orderId) {
+function adminActionLinks(orderId) {
   const base = webhookBaseUrl();
-  if (base) {
-    const tApprove = signAdminAction(orderId, 'approve');
-    const tReject = signAdminAction(orderId, 'reject');
+  if (!base) return null;
+  const id = String(orderId);
+  const tApprove = signAdminAction(id, 'approve');
+  const tReject = signAdminAction(id, 'reject');
+  return {
+    approve: `${base}/admin/approve/${id}?t=${tApprove}`,
+    reject: `${base}/admin/reject/${id}?t=${tReject}`,
+  };
+}
+
+function adminKeyboard(orderId) {
+  const links = adminActionLinks(orderId);
+  if (links) {
     return {
       inline_keyboard: [
         [
-          {
-            text: '✅ Approve',
-            url: `${base}/admin/approve/${orderId}?t=${tApprove}`,
-          },
-          {
-            text: '❌ Reject',
-            url: `${base}/admin/reject/${orderId}?t=${tReject}`,
-          },
+          { text: '✅ Approve', url: links.approve },
+          { text: '❌ Reject', url: links.reject },
         ],
       ],
     };
@@ -120,10 +124,23 @@ export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
       }
     }
 
+    const links = adminActionLinks(orderRow.id);
+    const linkText = links
+      ? [
+          `👇 Order #${orderRow.id} — Approve / Reject`,
+          '',
+          `✅ Approve: ${links.approve}`,
+          `❌ Reject: ${links.reject}`,
+          '',
+          '(ခလုတ် မရရင် အပေါ်က လင့်ခ် ကိုနှိပ်ပါ — browser ပွင့်ပါမည်)',
+        ].join('\n')
+      : `👇 Order #${orderRow.id} — PUBLIC_API_URL ထည့်ပါ (ခလုတ် အလုပ်မလုပ်ပါ)`;
+
     await tg('sendMessage', {
       chat_id: chatId,
-      text: `👇 Order #${orderRow.id} — Approve / Reject နှိပ်ပါ (browser ပွင့်ပါမည်)`,
+      text: linkText,
       reply_markup: keyboard,
+      disable_web_page_preview: true,
     });
   }
 }
@@ -303,10 +320,9 @@ export async function initTelegramTransport() {
   }
 
   const base = webhookBaseUrl();
+  console.log('[telegram] API base URL:', base || '(မရှိ — Render RENDER_EXTERNAL_URL စစ်ပါ)');
   if (!base) {
-    console.warn(
-      '[telegram] PUBLIC_API_URL သို့မဟုတ် TELEGRAM_WEBHOOK_URL ထည့်ပါ',
-    );
+    console.warn('[telegram] PUBLIC_API_URL / RENDER_EXTERNAL_URL မရှိ — Approve link မထွက်ပါ');
     return;
   }
 

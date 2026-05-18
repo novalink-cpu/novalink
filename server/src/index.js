@@ -60,7 +60,13 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'u5-vpn-api', telegram: getTelegramTransportMode() });
+  res.json({
+    ok: true,
+    service: 'u5-vpn-api',
+    telegram: getTelegramTransportMode(),
+    publicApiUrl: config.publicApiUrl || null,
+    adminLinks: Boolean(config.publicApiUrl || config.webhookUrl),
+  });
 });
 
 app.get('/api/orders', async (req, res) => {
