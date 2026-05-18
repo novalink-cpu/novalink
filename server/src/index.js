@@ -19,6 +19,12 @@ import {
   notifyAdminNewPayment,
 } from './telegram.js';
 import { parseOrderId } from './orderId.js';
+import {
+  adminResultHtml,
+  approveOrderById,
+  rejectOrderById,
+  verifyAdminAction,
+} from './adminActions.js';
 
 assertConfig();
 
@@ -188,6 +194,44 @@ app.get('/api/orders/:id/screenshot', async (req, res) => {
     res.send(row.screenshot_data);
   } catch (e) {
     res.status(500).end();
+  }
+});
+
+/** Admin — browser URL ခလုတ် (webhook မလိုပါ) */
+app.get('/admin/approve/:id', async (req, res) => {
+  try {
+    const id = parseOrderId(req.params.id);
+    if (!verifyAdminAction(id, 'approve', String(req.query.t || ''))) {
+      return res.status(403).send(adminResultHtml('Forbidden', 'လင့်ခ် မမှန်ပါ'));
+    }
+    const result = await approveOrderById(id);
+    if (!result.ok) {
+      return res.status(404).send(adminResultHtml('Error', result.error || 'Failed'));
+    }
+    const body = result.already
+      ? `Order #${id} — ပြီးသား approve လုပ်ထားပြီး`
+      : `Order #${id} ✅ Approved\n\nKey:\n${result.accessUrl}`;
+    res.send(adminResultHtml('✅ Approved', body));
+  } catch (e) {
+    console.error('[admin approve]', e);
+    res.status(500).send(adminResultHtml('Error', e.message));
+  }
+});
+
+app.get('/admin/reject/:id', async (req, res) => {
+  try {
+    const id = parseOrderId(req.params.id);
+    if (!verifyAdminAction(id, 'reject', String(req.query.t || ''))) {
+      return res.status(403).send(adminResultHtml('Forbidden', 'လင့်ခ် မမှန်ပါ'));
+    }
+    const result = await rejectOrderById(id);
+    if (!result.ok) {
+      return res.status(404).send(adminResultHtml('Error', result.error || 'Failed'));
+    }
+    res.send(adminResultHtml('❌ Rejected', `Order #${id} — ငွေလွှဲ မအတည်ပြုပါ`));
+  } catch (e) {
+    console.error('[admin reject]', e);
+    res.status(500).send(adminResultHtml('Error', e.message));
   }
 });
 

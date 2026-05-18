@@ -1,9 +1,11 @@
+import { approveOrderById, rejectOrderById, signAdminAction } from './adminActions.js';
 import { config } from './config.js';
-import { completeOrder, getOrderByIdAdmin, rejectOrder } from './db.js';
+import { getOrderByIdAdmin } from './db.js';
 import { parseOrderId } from './orderId.js';
-import { createVpnKey } from './vpn.js';
 
-const API = 'https://api.telegram.org';
+import { sendUserMessage, tg } from './telegramApi.js';
+
+const TELEGRAM_API = 'https://api.telegram.org';
 
 let pollingActive = false;
 let transportMode = 'none';
@@ -21,26 +23,32 @@ function webhookBaseUrl() {
   return base ? base.replace(/\/$/, '') : '';
 }
 
-async function tg(method, body = {}) {
-  if (!config.botToken) throw new Error('TELEGRAM_BOT_TOKEN not set');
-  const res = await fetch(`${API}/bot${config.botToken}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!data.ok) {
-    throw new Error(`Telegram ${method}: ${JSON.stringify(data)}`);
-  }
-  return data.result;
-}
-
-function isAdminUser(telegramUserId) {
-  const id = String(telegramUserId ?? '');
-  return config.adminChatIds.some((adminId) => adminId === id);
+function isAdminActor(query) {
+  const fromId = String(query.from?.id ?? '');
+  const chatId = String(query.message?.chat?.id ?? '');
+  return config.adminChatIds.some((adminId) => adminId === fromId || adminId === chatId);
 }
 
 function adminKeyboard(orderId) {
+  const base = webhookBaseUrl();
+  if (base) {
+    const tApprove = signAdminAction(orderId, 'approve');
+    const tReject = signAdminAction(orderId, 'reject');
+    return {
+      inline_keyboard: [
+        [
+          {
+            text: '✅ Approve',
+            url: `${base}/admin/approve/${orderId}?t=${tApprove}`,
+          },
+          {
+            text: '❌ Reject',
+            url: `${base}/admin/reject/${orderId}?t=${tReject}`,
+          },
+        ],
+      ],
+    };
+  }
   return {
     inline_keyboard: [
       [
@@ -102,7 +110,7 @@ export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
       form.append('caption', caption);
       form.append('photo', new Blob([screenshotBuffer], { type: mime || 'image/jpeg' }), 'payment.jpg');
 
-      const res = await fetch(`${API}/bot${config.botToken}/sendPhoto`, {
+      const res = await fetch(`${TELEGRAM_API}/bot${config.botToken}/sendPhoto`, {
         method: 'POST',
         body: form,
       });
@@ -114,18 +122,10 @@ export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
 
     await tg('sendMessage', {
       chat_id: chatId,
-      text: `👇 Order #${orderRow.id} — Approve သို့မဟုတ် Reject နှိပ်ပါ`,
+      text: `👇 Order #${orderRow.id} — Approve / Reject နှိပ်ပါ (browser ပွင့်ပါမည်)`,
       reply_markup: keyboard,
     });
   }
-}
-
-export async function sendUserMessage(telegramUserId, text) {
-  await tg('sendMessage', {
-    chat_id: telegramUserId,
-    text,
-    disable_web_page_preview: false,
-  });
 }
 
 async function answerCallback(query, text, showAlert = false) {
@@ -142,7 +142,7 @@ export async function handleCallbackQuery(query) {
 
   console.log('[telegram] callback', { data, fromId, mode: transportMode });
 
-  if (!isAdminUser(fromId)) {
+  if (!isAdminActor(query)) {
     await answerCallback(
       query,
       `Admin ID မကိုက်ညီပါ — TELEGRAM_ADMIN_CHAT_IDS=${fromId} ထည့်ပါ`,
@@ -160,78 +160,43 @@ export async function handleCallbackQuery(query) {
     return;
   }
 
-  if (!['approve', 'reject'].includes(action)) {
-    await answerCallback(query, 'မမှန်သော ခလုတ်', true);
-    return;
-  }
-
-  const row = await getOrderByIdAdmin(orderId);
-  if (!row) {
-    await answerCallback(query, `Order #${orderId} မတွေ့ပါ`, true);
-    return;
-  }
-
   if (action === 'reject') {
-    await answerCallback(query, '❌ Rejected');
-    await rejectOrder(orderId);
+    const result = await rejectOrderById(orderId);
+    await answerCallback(query, result.ok ? '❌ Rejected' : result.error || 'Failed', !result.ok);
+    if (result.ok) {
+      try {
+        const row = await getOrderByIdAdmin(orderId);
+        await editAdminMessage(
+          query,
+          `${formatOrderCaption({ ...row, status: 'rejected' })}\n\n❌ Rejected`,
+        );
+      } catch (e) {
+        console.warn('[telegram] edit reject message', e.message);
+      }
+    }
+    return;
+  }
+
+  if (action === 'approve') {
+    const result = await approveOrderById(orderId);
+    if (!result.ok) {
+      await answerCallback(query, result.error || 'Failed', true);
+      return;
+    }
+    await answerCallback(query, result.already ? 'ပြီးသား order' : '✅ Approved');
     try {
+      const row = await getOrderByIdAdmin(orderId);
       await editAdminMessage(
         query,
-        `${formatOrderCaption({ ...row, status: 'rejected' })}\n\n❌ Rejected by admin`,
+        `${formatOrderCaption({ ...row, status: 'completed' })}\n\n✅ Approved`,
       );
     } catch (e) {
-      console.warn('[telegram] edit reject message', e.message);
-    }
-    try {
-      await sendUserMessage(
-        row.telegram_user_id,
-        `❌ Order #${orderId} — ငွေလွှဲ အတည်မပြုနိုင်ပါ။ Support ကို ဆက်သွယ်ပါ။`,
-      );
-    } catch (e) {
-      console.warn('[telegram] notify user reject failed', e.message);
+      console.warn('[telegram] edit approve message', e.message);
     }
     return;
   }
 
-  if (row.status === 'completed') {
-    await answerCallback(query, 'ပြီးသား order ဖြစ်ပါသည်', true);
-    return;
-  }
-
-  await answerCallback(query, '✅ Processing...');
-
-  const { accessUrl, expiresAt } = await createVpnKey(row);
-  await completeOrder(orderId, accessUrl, expiresAt);
-
-  try {
-    await editAdminMessage(
-      query,
-      `${formatOrderCaption({ ...row, status: 'completed' })}\n\n✅ Approved — key issued`,
-    );
-  } catch (e) {
-    console.warn('[telegram] edit approve message', e.message);
-    await tg('sendMessage', {
-      chat_id: query.message.chat.id,
-      text: `Order #${orderId} ✅ approved\nKey: ${accessUrl}`,
-    }).catch(() => {});
-  }
-
-  try {
-    await sendUserMessage(
-      row.telegram_user_id,
-      [
-        `✅ Order #${orderId} အတည်ပြုပြီး — VPN Key`,
-        '',
-        accessUrl,
-        '',
-        `သက်တမ်းကုန်: ${new Date(expiresAt).toLocaleDateString('my-MM')}`,
-        '',
-        'Mini App → Active Keys မှလည်း ကူးယူနိုင်ပါသည်။',
-      ].join('\n'),
-    );
-  } catch (e) {
-    console.warn('[telegram] send key to user failed (user may not have started bot)', e.message);
-  }
+  await answerCallback(query, 'မမှန်သော ခလုတ်', true);
 }
 
 export async function handleTelegramUpdate(update) {

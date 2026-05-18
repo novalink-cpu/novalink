@@ -22,6 +22,7 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   publicApiUrl: trim(process.env.PUBLIC_API_URL),
+  adminActionSecret: trim(process.env.ADMIN_ACTION_SECRET),
   xuiPanelUrl: trim(process.env.XUI_PANEL_URL),
   xuiUsername: trim(process.env.XUI_USERNAME),
   xuiPassword: trim(process.env.XUI_PASSWORD),
