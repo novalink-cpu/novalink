@@ -240,36 +240,38 @@ export async function handleTelegramUpdate(update) {
   }
 }
 
-async function startPolling() {
+/** Background loop — await မလုပ်ပါ (server စတင် ပိတ်မသွားအောင်) */
+function startPolling() {
   if (pollingActive || !config.botToken) return;
   pollingActive = true;
   transportMode = 'polling';
 
-  await tg('deleteWebhook', { drop_pending_updates: false }).catch(() => {});
+  void (async () => {
+    await tg('deleteWebhook', { drop_pending_updates: false }).catch(() => {});
+    console.log('[telegram] ✅ polling mode started — Approve/Reject ခလုတ် အလုပ်လုပ်မည်');
 
-  console.log('[telegram] ✅ polling mode — Approve/Reject ခလုတ် အလုပ်လုပ်မည်');
-
-  let offset = 0;
-  while (pollingActive) {
-    try {
-      const updates = await tg('getUpdates', {
-        offset,
-        timeout: 25,
-        allowed_updates: ['callback_query', 'message'],
-      });
-      if (!Array.isArray(updates)) continue;
-
-      for (const update of updates) {
-        offset = Math.max(offset, update.update_id + 1);
-        handleTelegramUpdate(update).catch((e) => {
-          console.error('[telegram] handle update failed', e);
+    let offset = 0;
+    while (pollingActive) {
+      try {
+        const updates = await tg('getUpdates', {
+          offset,
+          timeout: 25,
+          allowed_updates: ['callback_query', 'message'],
         });
+        if (!Array.isArray(updates)) continue;
+
+        for (const update of updates) {
+          offset = Math.max(offset, update.update_id + 1);
+          handleTelegramUpdate(update).catch((e) => {
+            console.error('[telegram] handle update failed', e);
+          });
+        }
+      } catch (e) {
+        console.error('[telegram] polling error', e.message);
+        await sleep(4000);
       }
-    } catch (e) {
-      console.error('[telegram] polling error', e.message);
-      await sleep(4000);
     }
-  }
+  })();
 }
 
 async function trySetupWebhook() {
@@ -299,22 +301,31 @@ async function trySetupWebhook() {
   return true;
 }
 
-/** Server စတင်ချိန် — webhook သို့မဟုတ် polling (ခလုတ်အတွက် polling ပိုတည်ငြိမ်) */
+/** Server စတင်ချိန် — webhook ဦးစီး၊ မရရင် background polling */
 export async function initTelegramTransport() {
+  console.log('[telegram] initializing bot transport...');
+
   if (!config.botToken) {
-    console.warn('[telegram] TELEGRAM_BOT_TOKEN not set');
+    console.warn('[telegram] TELEGRAM_BOT_TOKEN not set — ခလုတ် အလုပ်မလုပ်ပါ');
     return;
   }
 
   if (!config.adminChatIds.length) {
-    console.warn('[telegram] TELEGRAM_ADMIN_CHAT_IDS not set');
+    console.warn('[telegram] TELEGRAM_ADMIN_CHAT_IDS not set — ခလုတ် နှိပ်ရင် admin မမှတ်မိပါ');
   } else {
     console.log('[telegram] admin IDs:', config.adminChatIds.join(', '));
   }
 
+  const base = webhookBaseUrl();
+  if (!base) {
+    console.warn(
+      '[telegram] PUBLIC_API_URL သို့မဟုတ် TELEGRAM_WEBHOOK_URL ထည့်ပါ — ခလုတ် အလုပ်မလုပ်ပါ',
+    );
+  }
+
   if (config.usePolling) {
-    console.log('[telegram] TELEGRAM_USE_POLLING=1 — webhook မသုံး၊ polling သုံး');
-    await startPolling();
+    console.log('[telegram] TELEGRAM_USE_POLLING=1');
+    startPolling();
     return;
   }
 
@@ -324,8 +335,8 @@ export async function initTelegramTransport() {
   });
 
   if (!webhookOk) {
-    console.warn('[telegram] webhook မအောင်မြင် — polling သို့ ပြောင်းပါ');
-    await startPolling();
+    console.warn('[telegram] webhook မအောင်မြင် — background polling သို့ ပြောင်းပါ');
+    startPolling();
   }
 }
 

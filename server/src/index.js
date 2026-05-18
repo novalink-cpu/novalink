@@ -214,9 +214,11 @@ function withPublicUrls(order) {
 
 async function main() {
   await initDb();
-  await initTelegramTransport();
   app.listen(config.port, () => {
     console.log(`[api] listening on port ${config.port}`);
+    initTelegramTransport().catch((e) => {
+      console.error('[telegram] init failed', e);
+    });
   });
 }
 
