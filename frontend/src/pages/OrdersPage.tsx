@@ -1,0 +1,72 @@
+import { Layout } from '@/components/Layout';
+import { Card, InfoRow } from '@/components/UI';
+import { ORDER_STATUS_LABELS } from '@data/config';
+import { useOrders } from '@/hooks/useOrder';
+import { useTelegram } from '@/hooks/useTelegram';
+import { getUserId } from '@/lib/userId';
+import { isUsingApi } from '@data/store/appStore';
+
+export function OrdersPage() {
+  const { user } = useTelegram();
+  const userId = getUserId(user);
+  const { orders, loading, error } = useOrders(userId);
+
+  return (
+    <Layout>
+      <Card title="အော်ဒါများ" icon="📦">
+        {isUsingApi() && (
+          <p style={{ fontSize: 13, color: '#2d7a28', marginBottom: 12 }}>🔗 Server API နှင့် ချိတ်ဆက်ထားသည်</p>
+        )}
+        {loading && <div className="empty-state">Loading...</div>}
+        {error && <div className="alert-box alert-box--info">{error}</div>}
+        {!loading && !error && orders.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state__icon">📦</div>
+            <p>အော်ဒါ မရှိသေးပါ</p>
+          </div>
+        )}
+        {!loading &&
+          orders.map((order) => (
+            <div key={order.id} className="key-card">
+              <InfoRow icon="📋" label="Order ID" value={order.id} />
+              {order.orderType === 'renew' && <InfoRow icon="🔄" label="အမျိုးအစား" value="သက်တမ်းတိုင်" />}
+              <InfoRow icon="🌍" label="Region" value={order.regionName} />
+              <InfoRow icon="📦" label="Package" value={order.packageLabel} />
+              <InfoRow icon="💰" label="ငွေ" value={`${order.amount.toLocaleString()} MMK`} />
+              <InfoRow
+                icon="📌"
+                label="Status"
+                value={
+                  <span className={`status-badge status-badge--${order.status}`}>
+                    {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                  </span>
+                }
+              />
+              {order.paymentMethodName && (
+                <InfoRow icon="💳" label="Payment" value={order.paymentMethodName} />
+              )}
+              {order.reference && <InfoRow icon="🔖" label="Reference" value={order.reference} />}
+              {order.screenshotUrl && (
+                <InfoRow
+                  icon="📷"
+                  label="Screenshot"
+                  value={
+                    <a href={order.screenshotUrl} target="_blank" rel="noopener noreferrer">
+                      ဖွင့်ကြည့်ရန်
+                    </a>
+                  }
+                />
+              )}
+              {order.accessUrl && (
+                <InfoRow
+                  icon="🔑"
+                  label="Key"
+                  value={<span className="key-card__url" style={{ margin: 0 }}>{order.accessUrl}</span>}
+                />
+              )}
+            </div>
+          ))}
+      </Card>
+    </Layout>
+  );
+}

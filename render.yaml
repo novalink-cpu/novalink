@@ -1,0 +1,44 @@
+# Render Blueprint (repo root, branch main မှာ commit/push လုပ်ထားရမည်)
+# Blueprint မရရင် RENDER.md → "လက်ဖြင့် deploy" ကြည့်ပါ
+
+services:
+  - type: web
+    name: u5-vpn-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: u5-vpn-db
+          property: connectionString
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_ADMIN_CHAT_IDS
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: VPN_DEMO_MODE
+        value: "1"
+
+  - type: web
+    name: u5-vpn-app
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+
+databases:
+  - name: u5-vpn-db
+    databaseName: u5vpn
+    user: u5vpn
