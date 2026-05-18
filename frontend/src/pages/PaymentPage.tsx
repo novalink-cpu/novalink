@@ -53,12 +53,12 @@ export function PaymentPage() {
         </div>
 
         <div className="alert-box alert-box--warning">
-          ငွေလွှဲပြီးပါက "ငွေလွှဲပြီးပါပြီ" ကိုနှိပ်ပြီး Screenshot သို့မဟုတ် Reference (MBanking Service-Transaction No. အနောက်ဆုံး ၆ လုံး) ပေးပို့ပါ။
+          ငွေလွှဲပြီးပါက "ငွေလွှဲပြီးပါပြီ" ကိုနှိပ်ပြီး Screenshot ပေးပို့ပါ။
         </div>
       </Card>
 
       <NavFooter>
-        <ActionButton icon="✅" label="ငွေပြီးမြောက်ပြီ" onClick={markPaid} />
+        <ActionButton icon="✅" label="ငွေလွှဲပြီးပါပြီ" onClick={markPaid} />
         <ActionButton icon="🔄" label="Package ပြန်ရွေးမည်" variant="secondary" onClick={() => navigate('/buy/package')} />
       </NavFooter>
     </Layout>

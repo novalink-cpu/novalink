@@ -92,7 +92,7 @@ export function PaymentVerifyPage() {
   return (
     <Layout>
       <MessageBubble>
-        ငွေပြီးမြောက်ပြီးမှ အောက်ပါ အတည်ပြု တင်ပြပါ
+        ငွေလွှဲပြီးပါက အောက်ပါ Screenshot ပေးပို့ပါ
       </MessageBubble>
 
       <Card>
