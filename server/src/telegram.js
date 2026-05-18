@@ -240,15 +240,24 @@ export async function handleTelegramUpdate(update) {
   }
 }
 
-/** Background loop — await မလုပ်ပါ (server စတင် ပိတ်မသွားအောင်) */
+/** Local dev သာ — webhook ဖျက်ပြီး polling (Render production မှာ မသုံးပါ) */
 function startPolling() {
   if (pollingActive || !config.botToken) return;
-  pollingActive = true;
-  transportMode = 'polling';
 
   void (async () => {
-    await tg('deleteWebhook', { drop_pending_updates: false }).catch(() => {});
-    console.log('[telegram] ✅ polling mode started — Approve/Reject ခလုတ် အလုပ်လုပ်မည်');
+    await tg('deleteWebhook', { drop_pending_updates: true }).catch(() => {});
+    const info = await tg('getWebhookInfo', {}).catch(() => ({}));
+    if (info.url) {
+      console.error(
+        '[telegram] polling မစတင်နိုင် — webhook သေးသေးရှိနေသည်:',
+        info.url,
+      );
+      return;
+    }
+
+    pollingActive = true;
+    transportMode = 'polling';
+    console.log('[telegram] ✅ polling mode (local dev)');
 
     let offset = 0;
     while (pollingActive) {
@@ -267,7 +276,15 @@ function startPolling() {
           });
         }
       } catch (e) {
-        console.error('[telegram] polling error', e.message);
+        const msg = e.message || '';
+        if (msg.includes('409')) {
+          console.error(
+            '[telegram] 409 Conflict — webhook နှင့် polling တပြိုင်နက် မရပါ။ TELEGRAM_USE_POLLING ဖယ်ပါ။',
+          );
+          pollingActive = false;
+          return;
+        }
+        console.error('[telegram] polling error', msg);
         await sleep(4000);
       }
     }
@@ -280,8 +297,6 @@ async function trySetupWebhook() {
 
   const url = `${base}/telegram/webhook`;
 
-  await tg('deleteWebhook', { drop_pending_updates: true }).catch(() => {});
-
   await tg('setWebhook', {
     url,
     allowed_updates: ['callback_query', 'message'],
@@ -289,19 +304,25 @@ async function trySetupWebhook() {
   });
 
   const info = await tg('getWebhookInfo', {});
-  console.log('[telegram] webhook URL:', info.url || url);
-  if (info.last_error_message) {
-    console.warn('[telegram] webhook error:', info.last_error_message);
+  const registered = Boolean(info.url);
+  console.log('[telegram] webhook URL:', info.url || '(none)');
+
+  if (!registered) {
     return false;
   }
-  if (!info.url) return false;
 
   transportMode = 'webhook';
-  console.log('[telegram] ✅ webhook mode');
+  console.log('[telegram] ✅ webhook mode — Approve/Reject ခလုတ် အလုပ်လုပ်မည်');
+  if (info.last_error_message) {
+    console.warn(
+      '[telegram] ယခင် webhook ပို့မှု error (ခလုတ် အလုပ်လုပ်နိုင်သေး):',
+      info.last_error_message,
+    );
+  }
   return true;
 }
 
-/** Server စတင်ချိန် — webhook ဦးစီး၊ မရရင် background polling */
+/** Production (Render): webhook သာ — polling မသုံး (409 Conflict ရှောင်ရန်) */
 export async function initTelegramTransport() {
   console.log('[telegram] initializing bot transport...');
 
@@ -319,12 +340,13 @@ export async function initTelegramTransport() {
   const base = webhookBaseUrl();
   if (!base) {
     console.warn(
-      '[telegram] PUBLIC_API_URL သို့မဟုတ် TELEGRAM_WEBHOOK_URL ထည့်ပါ — ခလုတ် အလုပ်မလုပ်ပါ',
+      '[telegram] PUBLIC_API_URL သို့မဟုတ် TELEGRAM_WEBHOOK_URL ထည့်ပါ',
     );
+    return;
   }
 
   if (config.usePolling) {
-    console.log('[telegram] TELEGRAM_USE_POLLING=1');
+    console.log('[telegram] TELEGRAM_USE_POLLING=1 (local dev)');
     startPolling();
     return;
   }
@@ -335,8 +357,12 @@ export async function initTelegramTransport() {
   });
 
   if (!webhookOk) {
-    console.warn('[telegram] webhook မအောင်မြင် — background polling သို့ ပြောင်းပါ');
-    startPolling();
+    console.error(
+      '[telegram] webhook မအောင်မြင်ပါ — Render env: PUBLIC_API_URL=https://u5-vpn-api.onrender.com',
+    );
+    console.error(
+      '[telegram] TELEGRAM_USE_POLLING မထားပါ — polling သည် webhook နှင့် 409 Conflict ဖြစ်စေသည်',
+    );
   }
 }
 

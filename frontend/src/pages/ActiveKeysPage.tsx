@@ -15,6 +15,39 @@ export function ActiveKeysPage() {
   const userId = getUserId(user);
   const [keys, setKeys] = useState<VpnKey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+
+  async function copyKeyText(text: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  const handleCopyKey = async (key: VpnKey) => {
+    const ok = await copyKeyText(key.accessUrl);
+    if (!ok) return;
+    haptic('success');
+    setCopiedKeyId(key.id);
+    window.setTimeout(() => {
+      setCopiedKeyId((current) => (current === key.id ? null : current));
+    }, 2000);
+  };
 
   useEffect(() => {
     getActiveKeys(userId)
@@ -71,9 +104,9 @@ export function ActiveKeysPage() {
             )}
             <div className="key-card__url">{key.accessUrl}</div>
             <ActionButton
-              icon="📋"
-              label="Copy Key"
-              onClick={() => navigator.clipboard.writeText(key.accessUrl)}
+              icon={copiedKeyId === key.id ? '✅' : '📋'}
+              label={copiedKeyId === key.id ? 'Copied' : 'Copy Key'}
+              onClick={() => handleCopyKey(key)}
             />
           </div>
         ))}
