@@ -55,9 +55,9 @@ export function RenewPage() {
         orderType: 'renew',
         createdAt: new Date().toISOString(),
       };
-      await saveOrder(order, userId);
-      savePurchaseDraft({ regionId: region.regionId, packageId: pkg.id, orderId });
-      navigate('/buy/confirm', { state: { order } });
+      const saved = await saveOrder(order, userId);
+      savePurchaseDraft({ regionId: region.regionId, packageId: pkg.id, orderId: saved.id });
+      navigate('/buy/confirm', { state: { order: saved } });
     } finally {
       setSubmitting(false);
     }

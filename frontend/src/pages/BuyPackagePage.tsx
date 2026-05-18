@@ -47,6 +47,9 @@ export function BuyPackagePage() {
       };
 
       const saved = await saveOrder(order, userId);
+      if (!saved.id || saved.id > 2_147_483_647) {
+        throw new Error('အော်ဒါ ID မရပါ — API ချိတ်ဆက်မှု စစ်ပါ။');
+      }
       savePurchaseDraft({ ...draft, packageId: pkg.id, orderId: saved.id });
       navigate('/buy/confirm', { state: { order: saved } });
     } catch (e) {

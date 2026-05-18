@@ -68,9 +68,9 @@ export function OrderConfirmPage() {
       paymentMethodName: method.name,
       status: 'pending' as const,
     };
-    await saveOrder(updated, userId);
-    setOrder(updated);
-    savePurchaseDraft({ ...draft, paymentMethodId: method.id, orderId: order.id });
+    const saved = await saveOrder(updated, userId);
+    setOrder(saved);
+    savePurchaseDraft({ ...draft, paymentMethodId: method.id, orderId: saved.id });
     navigate('/buy/payment');
   };
 

@@ -32,7 +32,7 @@ export function useOrder(userId: string, orderId?: number) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!orderId) {
+    if (orderId == null) {
       setOrder(null);
       setLoading(false);
       return;

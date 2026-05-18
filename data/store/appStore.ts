@@ -19,8 +19,51 @@ const ORDER_COUNTER_KEY = 'u5_order_counter';
 /** PostgreSQL SERIAL max — Date.now() must not be used as order id with the API */
 const PG_INT_MAX = 2_147_483_647;
 
-function isClientTempOrderId(id: number): boolean {
-  return !id || id < 1 || id > PG_INT_MAX;
+function isClientTempOrderId(id: number | undefined): boolean {
+  return id == null || id < 1 || id > PG_INT_MAX;
+}
+
+/** API mode: draft/local မှ မမှန်သော id ကို server pending အော်ဒါနဲ့ ချိတ်ပါ */
+async function resolveServerOrderId(
+  userId: string,
+  orderId?: number,
+  draft?: PurchaseDraft,
+): Promise<number | null> {
+  if (!isApiEnabled()) {
+    return isClientTempOrderId(orderId) ? null : (orderId ?? null);
+  }
+  if (orderId != null && !isClientTempOrderId(orderId)) {
+    return orderId;
+  }
+  try {
+    const orders = await renderGetOrders(userId);
+    const open = orders.filter((o) =>
+      ['pending', 'paid', 'verified'].includes(o.status),
+    );
+    let pool = open;
+    if (draft?.regionId) {
+      const byRegion = pool.filter((o) => o.regionId === draft.regionId);
+      if (byRegion.length) pool = byRegion;
+    }
+    if (draft?.packageId) {
+      const byPkg = pool.filter((o) => o.packageId === draft.packageId);
+      if (byPkg.length) pool = byPkg;
+    }
+    pool.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return pool[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function purgeInvalidLocalOrders() {
+  const orders = read<Order[]>(ORDERS_KEY, []);
+  const filtered = orders.filter((o) => !isClientTempOrderId(o.id));
+  if (filtered.length !== orders.length) {
+    write(ORDERS_KEY, filtered);
+  }
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -88,12 +131,18 @@ export async function saveOrder(order: Order, userId: string): Promise<Order> {
         ...withUser,
         packageMonths: pkg?.months ?? 1,
       });
+      if (isClientTempOrderId(withUser.id)) {
+        throw new Error('ဆာဗာသို့ အော်ဒါ မသိမ်းနိုင်ပါ — VITE_API_BASE_URL နှင့် Render API စစ်ပါ။');
+      }
     } catch (e) {
-      console.warn('API saveOrder failed, order kept locally', e);
+      console.warn('API saveOrder failed', e);
+      throw e;
     }
   }
 
-  localSaveOrder(withUser, userId);
+  if (!isClientTempOrderId(withUser.id)) {
+    localSaveOrder(withUser, userId);
+  }
   return withUser;
 }
 
@@ -110,13 +159,22 @@ export async function getOrders(userId: string): Promise<Order[]> {
 
 export async function getOrder(userId: string, orderId: number): Promise<Order | null> {
   if (isApiEnabled()) {
+    const draft = getPurchaseDraft();
+    let id = orderId;
+    if (isClientTempOrderId(id)) {
+      const resolved = await resolveServerOrderId(userId, id, draft);
+      if (!resolved) return null;
+      id = resolved;
+      savePurchaseDraft({ ...draft, orderId: id });
+    }
     try {
-      const remote = await renderGetOrder(userId, orderId);
-      if (remote) return remote;
+      return await renderGetOrder(userId, id);
     } catch (e) {
-      console.warn('API getOrder failed, using local', e);
+      console.warn('API getOrder failed', e);
+      return null;
     }
   }
+  purgeInvalidLocalOrders();
   return localGetOrders(userId).find((o) => o.id === orderId) ?? null;
 }
 
@@ -129,14 +187,37 @@ export async function submitPaymentProof(
   if (!isApiEnabled()) {
     throw new Error(apiConfigErrorMessage());
   }
+  const draft = getPurchaseDraft();
+  const resolved = await resolveServerOrderId(userId, orderId, draft);
+  if (!resolved) {
+    throw new Error(
+      'အော်ဒါ ID မမှန်ပါ — Home မှ Region/Package ပြန်ရွေးပြီး အသစ်ဝယ်ပါ (အရင် cache ရှင်းရန် Telegram ကို ပိတ်ပြီး ပြန်ဖွင့်ပါ)။',
+    );
+  }
+  if (resolved !== orderId) {
+    savePurchaseDraft({ ...draft, orderId: resolved });
+  }
   const blob = typeof screenshot === 'string' ? await dataUrlToBlob(screenshot) : screenshot;
-  const updated = await renderSubmitPayment(userId, orderId, reference, blob);
+  const updated = await renderSubmitPayment(userId, resolved, reference, blob);
   localSaveOrder(updated, userId);
   return updated;
 }
 
 export function getPurchaseDraft(): PurchaseDraft {
-  return read<PurchaseDraft>(DRAFT_KEY, {});
+  purgeInvalidLocalOrders();
+  const draft = read<PurchaseDraft>(DRAFT_KEY, {});
+  if (isClientTempOrderId(draft.orderId)) {
+    const { orderId: _removed, ...rest } = draft;
+    write(DRAFT_KEY, rest);
+    return rest;
+  }
+  return draft;
+}
+
+/** App စတင်ချိန် localStorage မှ မမှန်သော order id များ ရှင်းပါ */
+export function migrateStaleOrderData() {
+  purgeInvalidLocalOrders();
+  getPurchaseDraft();
 }
 
 export function savePurchaseDraft(draft: PurchaseDraft) {

@@ -16,6 +16,7 @@ import { FAQPage, FAQDetailPage } from '@/pages/FAQPage';
 import { SupportPage } from '@/pages/SupportPage';
 import { PriceListPage } from '@/pages/PriceListPage';
 import { RenewPage } from '@/pages/RenewPage';
+import { migrateStaleOrderData } from '@data/store/appStore';
 
 function BackButtonHandler() {
   const location = useLocation();
@@ -62,6 +63,10 @@ function BackButtonHandler() {
 
 export default function App() {
   const { isReady } = useTelegram();
+
+  useEffect(() => {
+    migrateStaleOrderData();
+  }, []);
 
   if (!isReady) {
     return (
