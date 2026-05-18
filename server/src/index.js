@@ -12,7 +12,12 @@ import {
   saveScreenshot,
   updateOrder,
 } from './db.js';
-import { handleTelegramUpdate, notifyAdminNewPayment, setupWebhook } from './telegram.js';
+import {
+  getTelegramTransportMode,
+  handleTelegramUpdate,
+  initTelegramTransport,
+  notifyAdminNewPayment,
+} from './telegram.js';
 import { parseOrderId } from './orderId.js';
 
 assertConfig();
@@ -49,7 +54,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'u5-vpn-api' });
+  res.json({ ok: true, service: 'u5-vpn-api', telegram: getTelegramTransportMode() });
 });
 
 app.get('/api/orders', async (req, res) => {
@@ -187,12 +192,14 @@ app.get('/api/orders/:id/screenshot', async (req, res) => {
 });
 
 app.post('/telegram/webhook', async (req, res) => {
+  res.json({ ok: true });
   try {
+    if (req.body?.callback_query) {
+      console.log('[webhook] callback_query', req.body.callback_query.data);
+    }
     await handleTelegramUpdate(req.body);
-    res.json({ ok: true });
   } catch (e) {
     console.error('[webhook]', e);
-    res.json({ ok: true });
   }
 });
 
@@ -207,7 +214,7 @@ function withPublicUrls(order) {
 
 async function main() {
   await initDb();
-  await setupWebhook();
+  await initTelegramTransport();
   app.listen(config.port, () => {
     console.log(`[api] listening on port ${config.port}`);
   });

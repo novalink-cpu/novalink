@@ -13,6 +13,10 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   webhookUrl: trim(process.env.TELEGRAM_WEBHOOK_URL),
+  /** 1 = webhook မသုံး polling only (local dev). မထားရင် webhook ဦးစီး */
+  usePolling: ['1', 'true', 'yes', 'on'].includes(
+    trim(process.env.TELEGRAM_USE_POLLING || '').toLowerCase(),
+  ),
   corsOrigins: trim(process.env.CORS_ORIGINS)
     .split(',')
     .map((s) => s.trim())

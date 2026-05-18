@@ -5,6 +5,22 @@ import { createVpnKey } from './vpn.js';
 
 const API = 'https://api.telegram.org';
 
+let pollingActive = false;
+let transportMode = 'none';
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export function getTelegramTransportMode() {
+  return transportMode;
+}
+
+function webhookBaseUrl() {
+  const base = config.webhookUrl || config.publicApiUrl;
+  return base ? base.replace(/\/$/, '') : '';
+}
+
 async function tg(method, body = {}) {
   if (!config.botToken) throw new Error('TELEGRAM_BOT_TOKEN not set');
   const res = await fetch(`${API}/bot${config.botToken}/${method}`, {
@@ -72,17 +88,18 @@ async function editAdminMessage(query, caption) {
   }
 }
 
+/** Screenshot + ခလုတ် — sendMessage (keyboard ယုံကြည်ရ) + sendPhoto */
 export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
   if (!config.adminChatIds.length) return;
 
   const caption = formatOrderCaption(orderRow);
+  const keyboard = adminKeyboard(orderRow.id);
 
   for (const chatId of config.adminChatIds) {
     if (screenshotBuffer?.length) {
       const form = new FormData();
       form.append('chat_id', chatId);
       form.append('caption', caption);
-      form.append('reply_markup', JSON.stringify(adminKeyboard(orderRow.id)));
       form.append('photo', new Blob([screenshotBuffer], { type: mime || 'image/jpeg' }), 'payment.jpg');
 
       const res = await fetch(`${API}/bot${config.botToken}/sendPhoto`, {
@@ -92,19 +109,14 @@ export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
       const data = await res.json();
       if (!data.ok) {
         console.error('[telegram] sendPhoto failed', data);
-        await tg('sendMessage', {
-          chat_id: chatId,
-          text: `${caption}\n\n(ဓာတ်ပုံ ပို့၍မရ — screenshot ကို API မှ ကြည့်ပါ)`,
-          reply_markup: adminKeyboard(orderRow.id),
-        });
       }
-    } else {
-      await tg('sendMessage', {
-        chat_id: chatId,
-        text: caption,
-        reply_markup: adminKeyboard(orderRow.id),
-      });
     }
+
+    await tg('sendMessage', {
+      chat_id: chatId,
+      text: `👇 Order #${orderRow.id} — Approve သို့မဟုတ် Reject နှိပ်ပါ`,
+      reply_markup: keyboard,
+    });
   }
 }
 
@@ -128,8 +140,14 @@ export async function handleCallbackQuery(query) {
   const data = query.data || '';
   const fromId = String(query.from?.id ?? '');
 
+  console.log('[telegram] callback', { data, fromId, mode: transportMode });
+
   if (!isAdminUser(fromId)) {
-    await answerCallback(query, 'Admin သာ approve လုပ်နိုင်ပါသည်', true);
+    await answerCallback(
+      query,
+      `Admin ID မကိုက်ညီပါ — TELEGRAM_ADMIN_CHAT_IDS=${fromId} ထည့်ပါ`,
+      true,
+    );
     return;
   }
 
@@ -154,8 +172,8 @@ export async function handleCallbackQuery(query) {
   }
 
   if (action === 'reject') {
-    await rejectOrder(orderId);
     await answerCallback(query, '❌ Rejected');
+    await rejectOrder(orderId);
     try {
       await editAdminMessage(
         query,
@@ -222,18 +240,43 @@ export async function handleTelegramUpdate(update) {
   }
 }
 
-export async function setupWebhook() {
-  if (!config.botToken) return;
+async function startPolling() {
+  if (pollingActive || !config.botToken) return;
+  pollingActive = true;
+  transportMode = 'polling';
 
-  if (!config.webhookUrl) {
-    console.warn(
-      '[telegram] TELEGRAM_WEBHOOK_URL မထည့်ရသေး — Approve/Reject ခလုတ် အလုပ်မလုပ်ပါ။',
-    );
-    console.warn('[telegram] Render env: TELEGRAM_WEBHOOK_URL=https://YOUR-SERVICE.onrender.com');
-    return;
+  await tg('deleteWebhook', { drop_pending_updates: false }).catch(() => {});
+
+  console.log('[telegram] ✅ polling mode — Approve/Reject ခလုတ် အလုပ်လုပ်မည်');
+
+  let offset = 0;
+  while (pollingActive) {
+    try {
+      const updates = await tg('getUpdates', {
+        offset,
+        timeout: 25,
+        allowed_updates: ['callback_query', 'message'],
+      });
+      if (!Array.isArray(updates)) continue;
+
+      for (const update of updates) {
+        offset = Math.max(offset, update.update_id + 1);
+        handleTelegramUpdate(update).catch((e) => {
+          console.error('[telegram] handle update failed', e);
+        });
+      }
+    } catch (e) {
+      console.error('[telegram] polling error', e.message);
+      await sleep(4000);
+    }
   }
+}
 
-  const url = `${config.webhookUrl.replace(/\/$/, '')}/telegram/webhook`;
+async function trySetupWebhook() {
+  const base = webhookBaseUrl();
+  if (!base) return false;
+
+  const url = `${base}/telegram/webhook`;
 
   await tg('deleteWebhook', { drop_pending_updates: true }).catch(() => {});
 
@@ -245,13 +288,48 @@ export async function setupWebhook() {
 
   const info = await tg('getWebhookInfo', {});
   console.log('[telegram] webhook URL:', info.url || url);
-  console.log('[telegram] pending updates:', info.pending_update_count ?? 0);
   if (info.last_error_message) {
-    console.warn('[telegram] webhook last error:', info.last_error_message);
+    console.warn('[telegram] webhook error:', info.last_error_message);
+    return false;
   }
+  if (!info.url) return false;
+
+  transportMode = 'webhook';
+  console.log('[telegram] ✅ webhook mode');
+  return true;
+}
+
+/** Server စတင်ချိန် — webhook သို့မဟုတ် polling (ခလုတ်အတွက် polling ပိုတည်ငြိမ်) */
+export async function initTelegramTransport() {
+  if (!config.botToken) {
+    console.warn('[telegram] TELEGRAM_BOT_TOKEN not set');
+    return;
+  }
+
   if (!config.adminChatIds.length) {
-    console.warn('[telegram] TELEGRAM_ADMIN_CHAT_IDS မထည့်ရသေး');
+    console.warn('[telegram] TELEGRAM_ADMIN_CHAT_IDS not set');
   } else {
     console.log('[telegram] admin IDs:', config.adminChatIds.join(', '));
   }
+
+  if (config.usePolling) {
+    console.log('[telegram] TELEGRAM_USE_POLLING=1 — webhook မသုံး၊ polling သုံး');
+    await startPolling();
+    return;
+  }
+
+  const webhookOk = await trySetupWebhook().catch((e) => {
+    console.warn('[telegram] webhook setup failed:', e.message);
+    return false;
+  });
+
+  if (!webhookOk) {
+    console.warn('[telegram] webhook မအောင်မြင် — polling သို့ ပြောင်းပါ');
+    await startPolling();
+  }
+}
+
+/** @deprecated — initTelegramTransport သုံးပါ */
+export async function setupWebhook() {
+  await initTelegramTransport();
 }
