@@ -51,6 +51,8 @@ export interface Order {
   accessUrl?: string;
   expiresAt?: string;
   createdAt: string;
+  /** Set after payment proof upload succeeds */
+  submitMessage?: string;
 }
 
 export interface VpnKey {

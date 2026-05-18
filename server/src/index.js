@@ -25,13 +25,23 @@ const upload = multer({
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 
+function isCorsOriginAllowed(origin) {
+  if (!origin) return true;
+  if (!config.corsOrigins.length) return true;
+  if (config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
+    return true;
+  }
+  // GitHub Pages + Telegram Mini App WebView origins
+  if (origin.endsWith('.github.io')) return true;
+  if (/^https:\/\/([\w-]+\.)?telegram\.org$/i.test(origin)) return true;
+  if (origin === 'https://t.me') return true;
+  return false;
+}
+
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    if (!config.corsOrigins.length) return cb(null, true);
-    if (config.corsOrigins.includes(origin) || config.corsOrigins.includes('*')) {
-      return cb(null, true);
-    }
+    if (isCorsOriginAllowed(origin)) return cb(null, true);
+    console.warn('[cors] blocked origin:', origin);
     return cb(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
@@ -140,16 +150,20 @@ app.post(
       if (!order) return res.status(404).json({ error: 'Order not found' });
 
       const row = await getOrderByIdAdmin(id);
-      await notifyAdminNewPayment(
-        { ...row, reference, status: 'verified' },
-        req.file.buffer,
-        mime,
-      );
 
+      // Client ကို ချက်ချင်း အောင်မြင်ကြောင်း ပြန်ပါ — Telegram notify က နောက်ကွယ်မှာ
       res.json({
         success: true,
         order: withPublicUrls(order),
-        message: 'Admin ဆီ Telegram သို့ ပို့ပြီးပါပြီ — အတည်ပြုချိန် စောင့်ပါ',
+        message: 'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ',
+      });
+
+      notifyAdminNewPayment(
+        { ...row, reference, status: 'verified' },
+        req.file.buffer,
+        mime,
+      ).catch((err) => {
+        console.error('[telegram] notifyAdminNewPayment failed', err);
       });
     } catch (e) {
       const code = e.statusCode || 500;

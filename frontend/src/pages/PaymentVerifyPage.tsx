@@ -20,6 +20,7 @@ export function PaymentVerifyPage() {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (order) {
@@ -55,21 +56,30 @@ export function PaymentVerifyPage() {
 
     setSubmitting(true);
     setUploadError(null);
+    setSuccessMessage(null);
     try {
-      haptic('success');
       const updated = await submitPaymentProof(
         userId,
         order.id,
         reference.trim(),
         screenshot,
       );
-      await update({
-        reference: updated.reference,
-        screenshot: updated.screenshot ?? screenshot,
-        screenshotUrl: updated.screenshotUrl,
-        status: updated.status,
-      });
-      navigate('/orders');
+      haptic('success');
+      const msg =
+        updated.submitMessage ??
+        'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ';
+      setSuccessMessage(msg);
+      try {
+        await update({
+          reference: updated.reference,
+          screenshot: updated.screenshot ?? screenshot,
+          screenshotUrl: updated.screenshotUrl,
+          status: updated.status,
+        });
+      } catch (syncErr) {
+        console.warn('Local order sync after submit', syncErr);
+      }
+      window.setTimeout(() => navigate('/orders'), 2200);
     } catch (err) {
       console.error(err);
       setUploadError(err instanceof Error ? err.message : 'တင်ပြခြင်း မအောင်မြင်ပါ။');
@@ -136,6 +146,15 @@ export function PaymentVerifyPage() {
           📌 ကျွန်ုပ်တို့ဘက်မှ အတည်ပြုပြီးပါက Key ကို ပေးပို့ပေးပါမည်။
         </div>
 
+        {successMessage && (
+          <div
+            className="alert-box alert-box--info"
+            style={{ marginTop: 12, borderColor: '#2e7d32', background: '#e8f5e9' }}
+          >
+            ✅ {successMessage}
+          </div>
+        )}
+
         {uploadError && (
           <div className="alert-box alert-box--warning" style={{ marginTop: 12 }}>
             {uploadError}
@@ -147,9 +166,15 @@ export function PaymentVerifyPage() {
         <NavFooter>
           <ActionButton
             icon="✅"
-            label={submitting ? 'တင်ပြနေသည်...' : 'အတည်ပြု တင်ပြမည်'}
+            label={
+              successMessage
+                ? 'အောင်မြင်ပါပြီ'
+                : submitting
+                  ? 'တင်ပြနေသည်...'
+                  : 'အတည်ပြု တင်ပြမည်'
+            }
             type="submit"
-            disabled={!reference.trim() || !screenshot || submitting}
+            disabled={!reference.trim() || !screenshot || submitting || Boolean(successMessage)}
           />
         </NavFooter>
       </form>

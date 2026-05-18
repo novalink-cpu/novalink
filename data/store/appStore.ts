@@ -198,9 +198,9 @@ export async function submitPaymentProof(
     savePurchaseDraft({ ...draft, orderId: resolved });
   }
   const blob = typeof screenshot === 'string' ? await dataUrlToBlob(screenshot) : screenshot;
-  const updated = await renderSubmitPayment(userId, resolved, reference, blob);
+  const { order: updated, message } = await renderSubmitPayment(userId, resolved, reference, blob);
   localSaveOrder(updated, userId);
-  return updated;
+  return { ...updated, submitMessage: message };
 }
 
 export function getPurchaseDraft(): PurchaseDraft {

@@ -93,19 +93,22 @@ export async function renderSubmitPayment(
   reference: string,
   screenshotFile: Blob,
   filename = 'payment.jpg',
-): Promise<Order> {
+): Promise<{ order: Order; message: string }> {
   const form = new FormData();
   form.append('telegramUserId', telegramUserId);
   form.append('reference', reference);
   form.append('screenshot', screenshotFile, filename);
 
-  const data = await parseJson<{ order: Order }>(
+  const data = await parseJson<{ order: Order; message?: string; success?: boolean }>(
     await fetch(apiUrl(`/api/orders/${orderId}/submit-payment`), {
       method: 'POST',
       body: form,
     }),
   );
-  return data.order;
+  return {
+    order: data.order,
+    message: data.message ?? 'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ',
+  };
 }
 
 export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
