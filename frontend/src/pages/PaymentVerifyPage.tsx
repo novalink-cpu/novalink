@@ -16,7 +16,6 @@ export function PaymentVerifyPage() {
   const draft = getPurchaseDraft();
   const { order, loading, update } = useOrder(userId, draft.orderId);
 
-  const [reference, setReference] = useState('');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -24,7 +23,6 @@ export function PaymentVerifyPage() {
 
   useEffect(() => {
     if (order) {
-      setReference(order.reference ?? `PAY ${order.id} `);
       setScreenshot(order.screenshot ?? order.screenshotUrl ?? null);
     }
   }, [order]);
@@ -52,18 +50,13 @@ export function PaymentVerifyPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!reference.trim() || !screenshot) return;
+    if (!screenshot) return;
 
     setSubmitting(true);
     setUploadError(null);
     setSuccessMessage(null);
     try {
-      const updated = await submitPaymentProof(
-        userId,
-        order.id,
-        reference.trim(),
-        screenshot,
-      );
+      const updated = await submitPaymentProof(userId, order.id, screenshot);
       haptic('success');
       const msg =
         updated.submitMessage ??
@@ -71,7 +64,6 @@ export function PaymentVerifyPage() {
       setSuccessMessage(msg);
       try {
         await update({
-          reference: updated.reference,
           screenshot: updated.screenshot ?? screenshot,
           screenshotUrl: updated.screenshotUrl,
           status: updated.status,
@@ -98,27 +90,6 @@ export function PaymentVerifyPage() {
       <Card>
         <div className="step-item">
           <span className="step-item__num">1</span>
-          <div>
-            <p className="step-item__title">
-              Reference (MBanking Service နဲ့ Transaction No. အနောက်ဆုံး ၆ လုံး) ရိုက်
-            </p>
-            <p className="step-item__desc">ဥပမာ: PAY {order.id} KBZ-123456</p>
-          </div>
-        </div>
-
-        <label className="form-label" htmlFor="reference">
-          Reference
-        </label>
-        <input
-          id="reference"
-          className="form-input"
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-          placeholder={`PAY ${order.id} KBZ-123456`}
-        />
-
-        <div className="step-item" style={{ marginTop: 20 }}>
-          <span className="step-item__num">2</span>
           <div>
             <p className="step-item__title">Screenshot ပြီး</p>
             <p className="step-item__desc">ငွေပေးချေမှု Screenshot ကို တင်ပြပါ</p>
@@ -171,10 +142,10 @@ export function PaymentVerifyPage() {
                 ? 'အောင်မြင်ပါပြီ'
                 : submitting
                   ? 'တင်ပြနေသည်...'
-                  : 'အတည်ပြု တင်ပြမည်'
+                  : 'Screenshot တင်ပြမည်'
             }
             type="submit"
-            disabled={!reference.trim() || !screenshot || submitting || Boolean(successMessage)}
+            disabled={!screenshot || submitting || Boolean(successMessage)}
           />
         </NavFooter>
       </form>

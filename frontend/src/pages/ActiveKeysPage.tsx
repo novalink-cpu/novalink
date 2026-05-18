@@ -11,13 +11,23 @@ import type { VpnKey } from '@data/types';
 
 export function ActiveKeysPage() {
   const navigate = useNavigate();
-  const { haptic, user } = useTelegram();
+  const { haptic, user, webApp } = useTelegram();
   const userId = getUserId(user);
   const [keys, setKeys] = useState<VpnKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
 
   async function copyKeyText(text: string): Promise<boolean> {
+    const tgCopy = (webApp as { copyText?: (t: string, cb?: () => void) => void } | undefined)
+      ?.copyText;
+    if (tgCopy) {
+      try {
+        tgCopy(text);
+        return true;
+      } catch {
+        /* fall through */
+      }
+    }
     try {
       await navigator.clipboard.writeText(text);
       return true;
@@ -40,13 +50,13 @@ export function ActiveKeysPage() {
   }
 
   const handleCopyKey = async (key: VpnKey) => {
-    const ok = await copyKeyText(key.accessUrl);
-    if (!ok) return;
+    haptic('selection');
+    await copyKeyText(key.accessUrl);
     haptic('success');
     setCopiedKeyId(key.id);
     window.setTimeout(() => {
       setCopiedKeyId((current) => (current === key.id ? null : current));
-    }, 2000);
+    }, 2500);
   };
 
   useEffect(() => {
@@ -106,8 +116,22 @@ export function ActiveKeysPage() {
             <ActionButton
               icon={copiedKeyId === key.id ? '✅' : '📋'}
               label={copiedKeyId === key.id ? 'Copied' : 'Copy Key'}
-              onClick={() => handleCopyKey(key)}
+              onClick={() => void handleCopyKey(key)}
             />
+            {copiedKeyId === key.id && (
+              <p
+                className="copy-feedback"
+                style={{
+                  marginTop: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#2e7d32',
+                  textAlign: 'center',
+                }}
+              >
+                ✅ Copied
+              </p>
+            )}
           </div>
         ))}
       </Card>

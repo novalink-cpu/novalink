@@ -140,10 +140,10 @@ app.post(
     try {
       const id = parseOrderId(req.params.id);
       const telegramUserId = String(req.body.telegramUserId || '').trim();
-      const reference = String(req.body.reference || '').trim();
+      const reference = String(req.body.reference || '').trim() || `Order #${id}`;
 
-      if (!telegramUserId || !reference) {
-        return res.status(400).json({ error: 'telegramUserId and reference required' });
+      if (!telegramUserId) {
+        return res.status(400).json({ error: 'telegramUserId required' });
       }
       if (!req.file?.buffer?.length) {
         return res.status(400).json({ error: 'screenshot file required' });

@@ -45,7 +45,6 @@ export function OrdersPage() {
               {order.paymentMethodName && (
                 <InfoRow icon="💳" label="Payment" value={order.paymentMethodName} />
               )}
-              {order.reference && <InfoRow icon="🔖" label="Reference" value={order.reference} />}
               {order.screenshotUrl && (
                 <InfoRow
                   icon="📷"

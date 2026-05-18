@@ -181,7 +181,6 @@ export async function getOrder(userId: string, orderId: number): Promise<Order |
 export async function submitPaymentProof(
   userId: string,
   orderId: number,
-  reference: string,
   screenshot: string | Blob,
 ): Promise<Order> {
   if (!isApiEnabled()) {
@@ -198,6 +197,7 @@ export async function submitPaymentProof(
     savePurchaseDraft({ ...draft, orderId: resolved });
   }
   const blob = typeof screenshot === 'string' ? await dataUrlToBlob(screenshot) : screenshot;
+  const reference = `Order #${resolved}`;
   const { order: updated, message } = await renderSubmitPayment(userId, resolved, reference, blob);
   localSaveOrder(updated, userId);
   return { ...updated, submitMessage: message };
