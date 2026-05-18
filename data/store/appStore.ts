@@ -16,6 +16,13 @@ const KEYS_KEY = 'u5_keys';
 const DRAFT_KEY = 'u5_purchase_draft';
 const ORDER_COUNTER_KEY = 'u5_order_counter';
 
+/** PostgreSQL SERIAL max — Date.now() must not be used as order id with the API */
+const PG_INT_MAX = 2_147_483_647;
+
+function isClientTempOrderId(id: number): boolean {
+  return !id || id < 1 || id > PG_INT_MAX;
+}
+
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -58,7 +65,7 @@ export const isUsingRenderApi = isUsingApi;
 
 export async function createOrderId(): Promise<number> {
   if (isApiEnabled()) {
-    return Date.now();
+    return 0;
   }
   return localCreateOrderId();
 }
@@ -69,15 +76,18 @@ export async function saveOrder(order: Order, userId: string): Promise<Order> {
 
   if (isApiEnabled()) {
     try {
-      const remote = await renderGetOrder(userId, order.id);
-      if (remote) {
-        withUser = await renderUpdateOrder(userId, order.id, withUser);
-      } else {
-        withUser = await renderCreateOrder(userId, {
-          ...withUser,
-          packageMonths: pkg?.months ?? 1,
-        });
+      if (!isClientTempOrderId(withUser.id)) {
+        const remote = await renderGetOrder(userId, withUser.id);
+        if (remote) {
+          withUser = await renderUpdateOrder(userId, withUser.id, withUser);
+          localSaveOrder(withUser, userId);
+          return withUser;
+        }
       }
+      withUser = await renderCreateOrder(userId, {
+        ...withUser,
+        packageMonths: pkg?.months ?? 1,
+      });
     } catch (e) {
       console.warn('API saveOrder failed, order kept locally', e);
     }

@@ -13,6 +13,7 @@ import {
   updateOrder,
 } from './db.js';
 import { handleTelegramUpdate, notifyAdminNewPayment, setupWebhook } from './telegram.js';
+import { parseOrderId } from './orderId.js';
 
 assertConfig();
 
@@ -57,7 +58,7 @@ app.get('/api/orders', async (req, res) => {
 
 app.get('/api/orders/:id', async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseOrderId(req.params.id);
     const telegramUserId = String(req.query.telegramUserId || '').trim();
     if (!telegramUserId) {
       return res.status(400).json({ error: 'telegramUserId required' });
@@ -93,14 +94,15 @@ app.post('/api/orders', async (req, res) => {
     });
     res.status(201).json({ order: withPublicUrls(order) });
   } catch (e) {
+    const code = e.statusCode || 500;
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(code).json({ error: e.message });
   }
 });
 
 app.patch('/api/orders/:id', async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseOrderId(req.params.id);
     const telegramUserId = String(req.body?.telegramUserId || '').trim();
     if (!telegramUserId) {
       return res.status(400).json({ error: 'telegramUserId required' });
@@ -109,8 +111,9 @@ app.patch('/api/orders/:id', async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Not found' });
     res.json({ order: withPublicUrls(order) });
   } catch (e) {
+    const code = e.statusCode || 500;
     console.error(e);
-    res.status(500).json({ error: e.message });
+    res.status(code).json({ error: e.message });
   }
 });
 
@@ -120,7 +123,7 @@ app.post(
   upload.single('screenshot'),
   async (req, res) => {
     try {
-      const id = Number(req.params.id);
+      const id = parseOrderId(req.params.id);
       const telegramUserId = String(req.body.telegramUserId || '').trim();
       const reference = String(req.body.reference || '').trim();
 
@@ -149,15 +152,16 @@ app.post(
         message: 'Admin ဆီ Telegram သို့ ပို့ပြီးပါပြီ — အတည်ပြုချိန် စောင့်ပါ',
       });
     } catch (e) {
+      const code = e.statusCode || 500;
       console.error(e);
-      res.status(500).json({ error: e.message });
+      res.status(code).json({ error: e.message });
     }
   },
 );
 
 app.get('/api/orders/:id/screenshot', async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseOrderId(req.params.id);
     const row = await getScreenshotRow(id);
     if (!row?.screenshot_data) return res.status(404).end();
     res.setHeader('Content-Type', row.screenshot_mime || 'image/jpeg');
