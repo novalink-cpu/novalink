@@ -1,4 +1,4 @@
-import { approveOrderById, rejectOrderById, signAdminAction } from './adminActions.js';
+import { approveOrderById, rejectOrderById } from './adminActions.js';
 import { config } from './config.js';
 import { getOrderByIdAdmin } from './db.js';
 import { parseOrderId } from './orderId.js';
@@ -29,35 +29,14 @@ function isAdminActor(query) {
   return config.adminChatIds.some((adminId) => adminId === fromId || adminId === chatId);
 }
 
-function adminActionLinks(orderId) {
-  const base = webhookBaseUrl();
-  if (!base) return null;
-  const id = String(orderId);
-  const tApprove = signAdminAction(id, 'approve');
-  const tReject = signAdminAction(id, 'reject');
-  return {
-    approve: `${base}/admin/approve/${id}?t=${tApprove}`,
-    reject: `${base}/admin/reject/${id}?t=${tReject}`,
-  };
-}
-
+/** Telegram callback ခလုတ် — browser မဖွင့်ပါ */
 function adminKeyboard(orderId) {
-  const links = adminActionLinks(orderId);
-  if (links) {
-    return {
-      inline_keyboard: [
-        [
-          { text: '✅ Approve', url: links.approve },
-          { text: '❌ Reject', url: links.reject },
-        ],
-      ],
-    };
-  }
+  const id = String(orderId);
   return {
     inline_keyboard: [
       [
-        { text: '✅ Approve', callback_data: `approve:${orderId}` },
-        { text: '❌ Reject', callback_data: `reject:${orderId}` },
+        { text: '✅ Approve', callback_data: `approve:${id}` },
+        { text: '❌ Reject', callback_data: `reject:${id}` },
       ],
     ],
   };
@@ -77,7 +56,6 @@ function formatOrderCaption(order) {
     `Package: ${order.package_label}`,
     `Amount: ${order.amount} MMK`,
     `Payment: ${order.payment_method_name || '-'}`,
-    `Reference: ${order.reference || '-'}`,
     `Status: ${order.status}`,
   ].join('\n');
 }
@@ -100,19 +78,24 @@ async function editAdminMessage(query, caption) {
   }
 }
 
-/** Screenshot + ခလုတ် — sendMessage (keyboard ယုံကြည်ရ) + sendPhoto */
+/** Screenshot + Approve/Reject ခလုတ် — message တစ်ခုတည်း */
 export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
   if (!config.adminChatIds.length) return;
 
-  const caption = formatOrderCaption(orderRow);
+  const caption = `${formatOrderCaption(orderRow)}\n\n👇 Approve သို့မဟုတ် Reject နှိပ်ပါ`;
   const keyboard = adminKeyboard(orderRow.id);
 
   for (const chatId of config.adminChatIds) {
     if (screenshotBuffer?.length) {
       const form = new FormData();
-      form.append('chat_id', chatId);
+      form.append('chat_id', String(chatId));
       form.append('caption', caption);
-      form.append('photo', new Blob([screenshotBuffer], { type: mime || 'image/jpeg' }), 'payment.jpg');
+      form.append('reply_markup', JSON.stringify(keyboard));
+      form.append(
+        'photo',
+        new Blob([screenshotBuffer], { type: mime || 'image/jpeg' }),
+        'payment.jpg',
+      );
 
       const res = await fetch(`${TELEGRAM_API}/bot${config.botToken}/sendPhoto`, {
         method: 'POST',
@@ -120,28 +103,20 @@ export async function notifyAdminNewPayment(orderRow, screenshotBuffer, mime) {
       });
       const data = await res.json();
       if (!data.ok) {
-        console.error('[telegram] sendPhoto failed', data);
+        console.error('[telegram] sendPhoto+keyboard failed', data);
+        await tg('sendMessage', {
+          chat_id: chatId,
+          text: caption,
+          reply_markup: keyboard,
+        });
       }
+    } else {
+      await tg('sendMessage', {
+        chat_id: chatId,
+        text: caption,
+        reply_markup: keyboard,
+      });
     }
-
-    const links = adminActionLinks(orderRow.id);
-    const linkText = links
-      ? [
-          `👇 Order #${orderRow.id} — Approve / Reject`,
-          '',
-          `✅ Approve: ${links.approve}`,
-          `❌ Reject: ${links.reject}`,
-          '',
-          '(ခလုတ် မရရင် အပေါ်က လင့်ခ် ကိုနှိပ်ပါ — browser ပွင့်ပါမည်)',
-        ].join('\n')
-      : `👇 Order #${orderRow.id} — PUBLIC_API_URL ထည့်ပါ (ခလုတ် အလုပ်မလုပ်ပါ)`;
-
-    await tg('sendMessage', {
-      chat_id: chatId,
-      text: linkText,
-      reply_markup: keyboard,
-      disable_web_page_preview: true,
-    });
   }
 }
 
@@ -162,7 +137,7 @@ export async function handleCallbackQuery(query) {
   if (!isAdminActor(query)) {
     await answerCallback(
       query,
-      `Admin ID မကိုက်ညီပါ — TELEGRAM_ADMIN_CHAT_IDS=${fromId} ထည့်ပါ`,
+      `Admin ID: ${fromId} — TELEGRAM_ADMIN_CHAT_IDS မှာထည့်ပါ`,
       true,
     );
     return;
@@ -178,8 +153,8 @@ export async function handleCallbackQuery(query) {
   }
 
   if (action === 'reject') {
+    await answerCallback(query, 'လုပ်ဆောင်နေသည်...');
     const result = await rejectOrderById(orderId);
-    await answerCallback(query, result.ok ? '❌ Rejected' : result.error || 'Failed', !result.ok);
     if (result.ok) {
       try {
         const row = await getOrderByIdAdmin(orderId);
@@ -190,22 +165,32 @@ export async function handleCallbackQuery(query) {
       } catch (e) {
         console.warn('[telegram] edit reject message', e.message);
       }
+    } else {
+      try {
+        await editAdminMessage(query, `❌ Reject မအောင်မြင်: ${result.error || 'Failed'}`);
+      } catch {
+        /* ignore */
+      }
     }
     return;
   }
 
   if (action === 'approve') {
+    await answerCallback(query, 'လုပ်ဆောင်နေသည်...');
     const result = await approveOrderById(orderId);
     if (!result.ok) {
-      await answerCallback(query, result.error || 'Failed', true);
+      try {
+        await editAdminMessage(query, `❌ Approve မအောင်မြင်: ${result.error || 'Failed'}`);
+      } catch {
+        /* ignore */
+      }
       return;
     }
-    await answerCallback(query, result.already ? 'ပြီးသား order' : '✅ Approved');
     try {
       const row = await getOrderByIdAdmin(orderId);
       await editAdminMessage(
         query,
-        `${formatOrderCaption({ ...row, status: 'completed' })}\n\n✅ Approved`,
+        `${formatOrderCaption({ ...row, status: 'completed' })}\n\n✅ Approved — key ပို့ပြီး`,
       );
     } catch (e) {
       console.warn('[telegram] edit approve message', e.message);
@@ -279,10 +264,12 @@ async function trySetupWebhook() {
 
   const url = `${base}/telegram/webhook`;
 
+  await tg('deleteWebhook', { drop_pending_updates: false }).catch(() => {});
+
   await tg('setWebhook', {
     url,
-    allowed_updates: ['callback_query', 'message'],
-    drop_pending_updates: true,
+    allowed_updates: ['callback_query'],
+    drop_pending_updates: false,
   });
 
   const info = await tg('getWebhookInfo', {});
