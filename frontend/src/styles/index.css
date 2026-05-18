@@ -296,6 +296,11 @@ img {
   color: var(--app-green-dark);
 }
 
+.action-btn--copied {
+  background: #1565c0;
+  color: #fff;
+}
+
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

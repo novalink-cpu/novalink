@@ -19,7 +19,7 @@ interface ActionButtonProps {
   icon?: ReactNode;
   label: ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'copied';
   disabled?: boolean;
   type?: 'button' | 'submit';
 }

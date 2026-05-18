@@ -116,22 +116,9 @@ export function ActiveKeysPage() {
             <ActionButton
               icon={copiedKeyId === key.id ? '✅' : '📋'}
               label={copiedKeyId === key.id ? 'Copied' : 'Copy Key'}
+              variant={copiedKeyId === key.id ? 'copied' : 'primary'}
               onClick={() => void handleCopyKey(key)}
             />
-            {copiedKeyId === key.id && (
-              <p
-                className="copy-feedback"
-                style={{
-                  marginTop: 8,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: '#2e7d32',
-                  textAlign: 'center',
-                }}
-              >
-                ✅ Copied
-              </p>
-            )}
           </div>
         ))}
       </Card>
