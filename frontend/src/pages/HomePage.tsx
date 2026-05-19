@@ -9,6 +9,7 @@ import { useTelegram } from '@/hooks/useTelegram';
 const MENU_ITEMS = [
   { icon: '🔐', label: 'VPN Key ဝယ်ရန်', path: '/buy' },
   { icon: <KeyIcon />, label: 'ကျွန်ုပ်၏ Active Keys', path: '/keys' },
+  { icon: '📦', label: 'အော်ဒါများ', path: '/orders' },
   { icon: '💰', label: 'စျေးနှုန်းကြည့်ရန်', path: '/prices' },
   { icon: '📱', label: 'အသုံးပြုပုံ', path: '/guide' },
   { icon: '🔄', label: 'Key သက်တမ်းတိုးရန်', path: '/renew' },
