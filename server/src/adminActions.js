@@ -37,8 +37,26 @@ export async function approveOrderById(orderId) {
     return { ok: true, already: true, orderId: id, accessUrl: row.access_url };
   }
 
-  const { accessUrl, expiresAt } = await createVpnKey(row);
-  await completeOrder(id, accessUrl, expiresAt);
+  let accessUrl;
+  let expiresAt;
+  let vpnMeta = {};
+  try {
+    const keyResult = await createVpnKey(row);
+    accessUrl = keyResult.accessUrl;
+    expiresAt = keyResult.expiresAt;
+    vpnMeta = {
+      configToken: keyResult.configToken,
+      nodes: keyResult.nodes,
+    };
+  } catch (e) {
+    console.error('[admin] createVpnKey failed', e);
+    return { ok: false, error: e.message || 'VPN key ထုတ်၍ မရပါ' };
+  }
+  await completeOrder(id, accessUrl, expiresAt, vpnMeta);
+
+  const ssconfHint = String(accessUrl).startsWith('ssconf://')
+    ? 'Outline app ထဲ key ထည့်ပါ — Tokyo + Sydney node အော်တို (ssconf)'
+    : 'Outline app ထဲ key ထည့်ပါ';
 
   try {
     await sendUserMessage(
@@ -47,6 +65,8 @@ export async function approveOrderById(orderId) {
         `✅ Order #${id} အတည်ပြုပြီး — VPN Key`,
         '',
         accessUrl,
+        '',
+        ssconfHint,
         '',
         `သက်တမ်းကုန်: ${new Date(expiresAt).toLocaleDateString('my-MM')}`,
         '',

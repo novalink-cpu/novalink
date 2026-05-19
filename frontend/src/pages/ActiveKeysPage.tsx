@@ -112,6 +112,11 @@ export function ActiveKeysPage() {
                 📅 Expiry: {new Date(key.expiresAt).toLocaleString('my-MM')}
               </p>
             )}
+            {key.accessUrl.startsWith('ssconf://') && (
+              <p style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+                ssconf — Outline app ထဲ paste လုပ်ပါ (Tokyo + Sydney)
+              </p>
+            )}
             <div className="key-card__url">{key.accessUrl}</div>
             <ActionButton
               icon={copiedKeyId === key.id ? '✅' : '📋'}

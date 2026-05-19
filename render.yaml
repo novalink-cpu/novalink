@@ -1,11 +1,19 @@
-# Render Blueprint (repo root, branch main မှာ commit/push လုပ်ထားရမည်)
-# Blueprint မရရင် RENDER.md → "လက်ဖြင့် deploy" ကြည့်ပါ
+# Render Blueprint — https://dashboard.render.com/select-repo?type=blueprint
+# Repo branch: master (Render Dashboard → Settings မှာလည်း master ရွေးပါ)
+
+databases:
+  - name: novalink-db
+    databaseName: novalink
+    user: novalink
+    plan: free
 
 services:
+  # Node API + Telegram webhook + ssconf JSON
   - type: web
-    name: u5-vpn-api
+    name: novalink-api
     runtime: node
     rootDir: server
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
@@ -14,31 +22,59 @@ services:
         value: "20"
       - key: DATABASE_URL
         fromDatabase:
-          name: u5-vpn-db
+          name: novalink-db
           property: connectionString
+      - key: PUBLIC_API_URL
+        fromService:
+          type: web
+          name: novalink-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: TELEGRAM_WEBHOOK_URL
+        fromService:
+          type: web
+          name: novalink-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: APP_PUBLIC_URL
+        fromService:
+          type: web
+          name: novalink-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: novalink-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VPN_DEMO_MODE
+        value: "0"
+      - key: VPN_USE_SSCONF
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_ADMIN_CHAT_IDS
         sync: false
-      - key: TELEGRAM_WEBHOOK_URL
+      - key: ADMIN_ACTION_SECRET
+        generateValue: true
+      - key: OUTLINE_JP_API_URL
         sync: false
-      - key: PUBLIC_API_URL
+      - key: OUTLINE_JP_CERT_SHA256
         sync: false
-      - key: CORS_ORIGINS
+      - key: OUTLINE_AU_API_URL
         sync: false
-      - key: VPN_DEMO_MODE
-        value: "1"
+      - key: OUTLINE_AU_CERT_SHA256
+        sync: false
 
+  # Telegram Mini App (static)
   - type: web
-    name: u5-vpn-app
+    name: novalink-app
     runtime: static
+    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false
-
-databases:
-  - name: u5-vpn-db
-    databaseName: u5vpn
-    user: u5vpn
+        fromService:
+          type: web
+          name: novalink-api
+          envVarKey: RENDER_EXTERNAL_URL

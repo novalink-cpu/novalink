@@ -8,10 +8,12 @@ import {
   getOrdersByUser,
   getOrderByIdAdmin,
   getScreenshotRow,
+  getVpnSubscriptionByToken,
   initDb,
   saveScreenshot,
   updateOrder,
 } from './db.js';
+import { buildSubscriptionJson } from './vpnSubscription.js';
 import {
   getTelegramTransportMode,
   handleTelegramUpdate,
@@ -34,16 +36,20 @@ const upload = multer({
 });
 
 const app = express();
+if (config.trustProxy) {
+  app.set('trust proxy', 1);
+}
 app.use(express.json({ limit: '2mb' }));
 
 function isCorsOriginAllowed(origin) {
   if (!origin) return true;
-  if (!config.corsOrigins.length) return true;
+  const appOrigin = config.appPublicUrl?.replace(/\/$/, '');
+  if (appOrigin && origin === appOrigin) return true;
   if (config.corsOrigins.includes('*') || config.corsOrigins.includes(origin)) {
     return true;
   }
-  // GitHub Pages + Telegram Mini App WebView origins
-  if (origin.endsWith('.github.io')) return true;
+  if (!config.corsOrigins.length && !appOrigin) return true;
+  // Telegram Mini App WebView
   if (/^https:\/\/([\w-]+\.)?telegram\.org$/i.test(origin)) return true;
   if (origin === 'https://t.me') return true;
   return false;
@@ -62,11 +68,45 @@ app.use(cors(corsOptions));
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
-    service: 'u5-vpn-api',
+    service: 'novalink-api',
     telegram: getTelegramTransportMode(),
     publicApiUrl: config.publicApiUrl || null,
+    appPublicUrl: config.appPublicUrl || null,
+    vpnDemoMode: config.vpnDemoMode,
+    vpnUseSsconf: config.vpnUseSsconf,
+    outlineRegions: Object.keys(config.outlineServers),
     adminLinks: Boolean(config.publicApiUrl || config.webhookUrl),
   });
+});
+
+/** ssconf:// — Outline app fetches server list (Tokyo + Sydney, etc.) */
+app.get('/vpn/c/:token.json', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').trim();
+    if (!token || token.length < 16) {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+    const sub = await getVpnSubscriptionByToken(token);
+    if (!sub) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    if (sub.forbidden) {
+      return res.status(403).json({ error: 'Not active' });
+    }
+    if (sub.expired) {
+      return res.status(410).json({ error: 'Expired' });
+    }
+    if (sub.empty) {
+      return res.status(404).json({ error: 'No servers' });
+    }
+    const json = buildSubscriptionJson(sub.nodes);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.json(json);
+  } catch (e) {
+    console.error('[vpn] subscription json', e);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 app.get('/api/orders', async (req, res) => {
@@ -264,8 +304,8 @@ function withPublicUrls(order) {
 
 async function main() {
   await initDb();
-  app.listen(config.port, () => {
-    console.log(`[api] listening on port ${config.port}`);
+  app.listen(config.port, config.host, () => {
+    console.log(`[api] listening on http://${config.host}:${config.port}`);
     initTelegramTransport().catch((e) => {
       console.error('[telegram] init failed', e);
     });

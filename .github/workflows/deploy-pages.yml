@@ -1,4 +1,4 @@
-# GitHub Pages — push လုပ်တိုင်း build လုပ်ပြီး https://novalink-cpu.github.io/novalink/ မှာ ပြပါသည်
+# Optional: GitHub Pages Mini App (API stays on Render)
 name: Deploy GitHub Pages
 
 on:
@@ -29,17 +29,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Mini App
+      - name: Build Mini App for Pages
         run: npm run build:pages
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://novalink-api.onrender.com' }}
 
-      # README.md ကို Jekyll site အဖြစ် မပြအောင် — index.html (React app) သာ deploy
-      - name: Prepare Pages artifact
+      - name: Prepare artifact
         run: |
           test -f dist/index.html
           touch dist/.nojekyll
-          echo "Built files:"
           ls -la dist/
 
       - uses: actions/upload-pages-artifact@v3

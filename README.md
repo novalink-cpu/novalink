@@ -1,67 +1,103 @@
-# NovaLink MM — Telegram Mini App
+# NovaLink MM — Telegram Mini App + Outline VPN
 
-VPN key ဝယ်ယူမှု Mini App (React + Vite) + Render backend API.
+VPN key ဝယ်ယူမှု (Telegram Mini App) + Admin Approve + **Outline VPN** (Tokyo / Sydney) on **Vultr**.
 
-## Repo ဖွဲ့စည်းမှု
+## Production
 
-| Path | အကြောင်းအရာ |
-|------|----------------|
-| `frontend/index.html` | Mini App HTML template (source) |
-| `frontend/src/` | React pages & UI |
-| `server/` | Node API + Telegram bot webhook |
-| `data/` | Config & `appStore` |
-| `dist/` | Build output (**git မတင်** — CI မှာ ထုတ်) |
+### Render + GitHub (အကြံပြု — လွယ်ပါတယ်)
 
-GitHub မှာ root တွင် `index.html` မရှိရန် ပုံမှန်ဖြစ်သည် — **`frontend/index.html`** ကြည့်ပါ။
+**Deploy guide:** [RENDER.md](./RENDER.md)  
+Repo: https://github.com/novalink-cpu/novalink → Render Blueprint (`render.yaml`)
 
-## GitHub Pages (Mini App host)
+| Service | URL (example) |
+|---------|---------------|
+| `novalink-app` | Mini App (BotFather Web App) |
+| `novalink-api` | API + webhook + `ssconf` JSON |
 
-### ⚠️ Link မှာ README စာသား ပဲပြနေရင် (ပုံ ၂ လို)
+Outline VPN servers: Vultr (Tokyo/Sydney) — env `OUTLINE_JP_*`, `OUTLINE_AU_*`
 
-**အကြောင်းရင်း:** Pages က **branch ထဲ README.md** ကို ပြနေသည် — **React app build (`dist/`) မဟုတ်**။
+### Vultr + custom domain (optional)
 
-**ဖြေရှင်း:**
+**Developer handoff:** [DEVELOPER_HANDOFF.docx](./DEVELOPER_HANDOFF.docx)  
+**Server:** [deploy/nginx/novalink.conf](./deploy/nginx/novalink.conf)
 
-1. Repo → **Settings** → **Pages**  
-2. **Build and deployment** → Source က **`GitHub Actions`** ဖြစ်ရမည် (**Deploy from a branch မဟုတ်**)  
-3. **Actions** tab → **Deploy GitHub Pages** → အစိမ်းရင် အောင်မြင် စောင့်ပါ  
-4. မိနစ် ၁–၂ အကြာမှာ **https://novalink-cpu.github.io/novalink/** ပြန်ဖွင့်ပါ → ပုံ ၁ လို စိမ်းခလုတ်များ ပေါ်ရမည်  
+| URL | အသုံးပြုမှု |
+|-----|-------------|
+| `https://domain.com` | Telegram Mini App |
+| `https://api.domain.com` | Backend API + Telegram webhook |
 
-### စတင် setup
+## Quick start (local)
 
-1. **Settings** → **Pages** → Source: **GitHub Actions**  
-2. **Settings** → **Secrets and variables** → **Actions** → **Variables**  
-   - `VITE_API_BASE_URL` = `https://u5-vpn-api.onrender.com`  
-3. `master` သို့ **push** (`.github/workflows/deploy-pages.yml` ပါရမည်)  
+**လိုအပ်သည်:** Node 20+, **PostgreSQL** (Docker သို့မဟုတ် install)
 
-လင့်ခ်: **https://novalink-cpu.github.io/novalink/**
+### 1) Database
 
-BotFather Web App URL ထဲလည်း ဒီ URL ထည့်ပါ။
-
-## Render (API + optional static host)
-
-လမ်းညွှန်: [RENDER.md](./RENDER.md)
-
-## Local dev
+**Docker Desktop ရှိရင်:**
 
 ```bash
-npm install
-# .env: VITE_API_BASE_URL=http://localhost:3000
-npm run dev
+docker compose -f deploy/docker-compose.dev.yml up -d
 ```
 
-API (`server/`):
+**သို့မဟုတ်** PostgreSQL install — DB `novalink`, user/pass `novalink`
+
+### 2) Env
 
 ```bash
 cd server
-cp .env.example .env
+copy .env.local.example .env    # Windows
+# cp .env.local.example .env    # Mac/Linux
+
+cd ..
+echo VITE_API_BASE_URL=http://localhost:3000 > .env
 npm install
+cd server && npm install
+```
+
+### 3) Run (terminal ၂ ခု)
+
+```bash
+# Terminal 1 — API (http://localhost:3000)
+cd server && npm run dev
+
+# Terminal 2 — Mini App (http://localhost:5173)
 npm run dev
 ```
 
-## Build
+ဘရောက်ဇာမှာ **http://localhost:5173** ဖွင့်ပါ။  
+`VPN_DEMO_MODE=1` — Outline မလိုဘဲ demo key ထုတ်မည်။  
+Telegram bot စမ်းချင်ရင် `server/.env` ထဲ `TELEGRAM_BOT_TOKEN` + `TELEGRAM_USE_POLLING=1` ထည့်ပါ။
+
+**Docker မလိုဘဲ local ssconf စမ်း:**
+```bash
+npm run test:local-ssconf    # auto E2E (DB+API+approve+JSON)
+npm run dev:api-demo         # terminal 1 — embedded Postgres + API demo
+npm run dev                  # terminal 2 — Mini App (uses .env.development.local)
+node scripts/local-approve-url.mjs 1   # browser approve link
+```
+
+## Build (production)
 
 ```bash
-npm run build          # Render / local (base /)
-npm run build:pages    # GitHub Pages (base /novalink/)
+# .env: VITE_API_BASE_URL=https://api.domain.com
+npm run build:prod
 ```
+
+Output: `dist/` → nginx `root /var/www/novalink/dist`
+
+## Stack
+
+- **Frontend:** React + Vite (`frontend/`)
+- **API:** Node + Express + PostgreSQL (`server/`)
+- **VPN:** Outline Management API per region (`server/src/outline.js`)
+
+## Regions
+
+`data/config.ts` — Tokyo (`jp`), Sydney (`au`)
+
+## ssconf subscription (Qito-style)
+
+On approve, NovaLink creates Outline keys on **all configured regions** (jp + au) and sends one link:
+
+`ssconf://api.domain.com/vpn/c/TOKEN.json#NovaLink-Order-42`
+
+Outline app fetches `GET /vpn/c/:token.json` for the server list. Set `VPN_USE_SSCONF=1` and `PUBLIC_API_URL` (default on).

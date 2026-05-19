@@ -15,7 +15,7 @@ export function getPool() {
   if (!pool) {
     pool = new pg.Pool({
       connectionString: config.databaseUrl,
-      ssl: config.databaseUrl.includes('localhost')
+      ssl: /localhost|127\.0\.0\.1/i.test(config.databaseUrl)
         ? false
         : { rejectUnauthorized: false },
     });
@@ -24,9 +24,14 @@ export function getPool() {
 }
 
 export async function initDb() {
-  const sqlPath = path.join(__dirname, '..', 'sql', 'schema.sql');
-  const sql = fs.readFileSync(sqlPath, 'utf8');
-  await getPool().query(sql);
+  const sqlDir = path.join(__dirname, '..', 'sql');
+  const schema = fs.readFileSync(path.join(sqlDir, 'schema.sql'), 'utf8');
+  await getPool().query(schema);
+  const migrationPath = path.join(sqlDir, 'migration_vpn_subscription.sql');
+  if (fs.existsSync(migrationPath)) {
+    const migration = fs.readFileSync(migrationPath, 'utf8');
+    await getPool().query(migration);
+  }
 }
 
 export function rowToOrder(row) {
@@ -151,18 +156,52 @@ export async function getOrdersByUser(telegramUserId) {
   return r.rows.map(rowToOrder);
 }
 
-export async function completeOrder(id, accessUrl, expiresAt) {
+export async function completeOrder(id, accessUrl, expiresAt, vpnMeta = {}) {
   const r = await getPool().query(
     `UPDATE orders SET
       status = 'completed',
       access_url = $1,
       expires_at = $2,
+      vpn_config_token = $4,
+      vpn_nodes = $5,
       updated_at = NOW()
      WHERE id = $3
      RETURNING *`,
-    [accessUrl, expiresAt, id],
+    [
+      accessUrl,
+      expiresAt,
+      id,
+      vpnMeta.configToken ?? null,
+      vpnMeta.nodes ? JSON.stringify(vpnMeta.nodes) : null,
+    ],
   );
   return rowToOrder(r.rows[0]);
+}
+
+/** Public ssconf JSON — token from ssconf URL path. */
+export async function getVpnSubscriptionByToken(token) {
+  const r = await getPool().query(
+    `SELECT id, status, expires_at, vpn_nodes
+     FROM orders
+     WHERE vpn_config_token = $1`,
+    [token],
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  if (row.status !== 'completed') return { forbidden: true };
+  if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+    return { expired: true };
+  }
+  let nodes = row.vpn_nodes;
+  if (typeof nodes === 'string') {
+    try {
+      nodes = JSON.parse(nodes);
+    } catch {
+      nodes = null;
+    }
+  }
+  if (!Array.isArray(nodes) || !nodes.length) return { empty: true };
+  return { orderId: row.id, nodes };
 }
 
 export async function rejectOrder(id) {

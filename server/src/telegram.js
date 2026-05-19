@@ -307,9 +307,9 @@ export async function initTelegramTransport() {
   }
 
   const base = webhookBaseUrl();
-  console.log('[telegram] API base URL:', base || '(မရှိ — Render RENDER_EXTERNAL_URL စစ်ပါ)');
+  console.log('[telegram] API base URL:', base || '(မရှိ — PUBLIC_API_URL စစ်ပါ)');
   if (!base) {
-    console.warn('[telegram] PUBLIC_API_URL / RENDER_EXTERNAL_URL မရှိ — Approve link မထွက်ပါ');
+    console.warn('[telegram] PUBLIC_API_URL မရှိ — webhook / screenshot link မထွက်ပါ');
     return;
   }
 
@@ -326,7 +326,7 @@ export async function initTelegramTransport() {
 
   if (!webhookOk) {
     console.error(
-      '[telegram] webhook မအောင်မြင်ပါ — Render env: PUBLIC_API_URL=https://u5-vpn-api.onrender.com',
+      '[telegram] webhook မအောင်မြင်ပါ — PUBLIC_API_URL=https://api.domain.com နှင့် HTTPS စစ်ပါ',
     );
     console.error(
       '[telegram] TELEGRAM_USE_POLLING မထားပါ — polling သည် webhook နှင့် 409 Conflict ဖြစ်စေသည်',

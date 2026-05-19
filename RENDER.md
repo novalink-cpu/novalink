@@ -1,150 +1,124 @@
-# Render — deploy လမ်းညွှန်
+# NovaLink MM — GitHub + Render Deploy
 
-Mini App (Static Site) + API/Bot (Web Service) + PostgreSQL
+## Architecture on Render
 
-## Flow
+| Service | URL (example) | Role |
+|---------|---------------|------|
+| **novalink-api** | `https://novalink-api.onrender.com` | API, Telegram webhook, `ssconf` JSON |
+| **novalink-app** | `https://novalink-app.onrender.com` | Telegram Mini App (static) |
+| **novalink-db** | (internal) | PostgreSQL |
 
-1. User က Mini App မှာ screenshot + reference တင်ပြမယ်  
-2. API က PostgreSQL သိမ်း + **Admin Telegram** ဆီ ဓာတ်ပုံ + ✅ Approve / ❌ Reject  
-3. Admin Approve → VPN key ထုတ် → ဝယ်သူ bot chat + Mini App Orders/Active Keys  
-
----
-
-## ၁) Blueprint (မရရင် အောက်က လက်ဖြင့် လုပ်ပါ)
-
-Blueprint သုံးမယ်ဆိုရင်:
-
-1. `render.yaml` က **GitHub repo root** မှာ ရှိရမည်  
-2. **commit + push** လုပ်ထားရမည် (`main` branch)  
-3. Render → **New → Blueprint** → repo ရွေး  
-
-| Service | အမျိုးအစား |
-|---------|-------------|
-| `u5-vpn-api` | Web Service (Node, `server/`) |
-| `u5-vpn-app` | Static Site (`dist/`) |
-| `u5-vpn-db` | PostgreSQL |
-
-Blueprint မပေါ် / error ဆိုရင် → **၂ လက်ဖြင့် deploy** သုံးပါ (အကြံပြု)။
+Outline VPN servers (Tokyo/Sydney) stay on **Vultr** — Render မှာ API + DB + Mini App သာ။
 
 ---
 
-## ၂) လက်ဖြင့် deploy (Blueprint မလိုပါ)
-
-### အဆင့် ၁ — PostgreSQL
-
-1. Render Dashboard → **New +** → **PostgreSQL**  
-2. Name: `u5-vpn-db` · Region: **Singapore** · Plan: Free (ရှိရင်)  
-3. Create ပြီး **Internal Database URL** ကို copy (Web Service နဲ့ တူသော region)
-
-### အဆင့် ၂ — Web Service (API + Bot)
-
-**New +** → **Web Service** → GitHub repo `NovalinkVPN` ချိတ်
-
-| Field | Value |
-|--------|--------|
-| Name | `u5-vpn-api` |
-| Language | **Node** |
-| Region | Singapore |
-| Branch | `main` |
-| **Root Directory** | **`server`** |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
-
-**Environment** (Environment Variables):
-
-| Key | Value |
-|-----|--------|
-| `DATABASE_URL` | PostgreSQL Internal URL (အဆင့် ၁ က copy) |
-| `NODE_VERSION` | `20` |
-| `TELEGRAM_BOT_TOKEN` | BotFather token |
-| `TELEGRAM_ADMIN_CHAT_IDS` | သင့် numeric chat id |
-| `TELEGRAM_WEBHOOK_URL` | deploy ပြီးရင် `https://u5-vpn-api.onrender.com` |
-| `PUBLIC_API_URL` | `https://u5-vpn-api.onrender.com` |
-| `CORS_ORIGINS` | Static site URL (အဆင့် ၃ ပြီးမှ ထည့်) |
-| `VPN_DEMO_MODE` | `1` |
-
-**Create Web Service** → URL ဥပမာ `https://u5-vpn-api.onrender.com`  
-Browser: `/health` → `{"ok":true}`
-
-Deploy ပြီးရင် **Environment** မှာ `TELEGRAM_WEBHOOK_URL` နဲ့ `PUBLIC_API_URL` ကို အမှန် URL နဲ့ ပြင်ပြီး **Manual Deploy** တစ်ကြိမ်။
-
-### အဆင့် ၃ — Static Site (Mini App)
-
-**New +** → **Static Site** (Web Service မဟုတ်)
-
-| Field | Value |
-|--------|--------|
-| Name | `u5-vpn-app` |
-| Branch | `main` |
-| Root Directory | *(ဗလာ — repo root)* |
-| Build Command | `npm install && npm run build` |
-| Publish Directory | **`dist`** |
-
-**Environment:**
-
-| Key | Value |
-|-----|--------|
-| `VITE_API_BASE_URL` | `https://u5-vpn-api.onrender.com` |
-
-Create → **Manual Deploy** (env build အချိန်မှ ထည့်သွင်းသည်)
-
-### အဆင့် ၄ — CORS ပြန်ပြင်
-
-`u5-vpn-api` → Environment → `CORS_ORIGINS` =  
-`https://u5-vpn-app.onrender.com` (သင့် static URL)  
-→ Save → **Manual Deploy**
-
-### အဆင့် ၅ — Telegram
-
-- BotFather → Menu Button → Web App URL: `https://u5-vpn-app.onrender.com`  
-- Admin bot မှာ `/start`
-
----
-
-## ၂) Environment variables
-
-### `u5-vpn-api`
-
-| Key | မှတ်ချက် |
-|-----|----------|
-| `DATABASE_URL` | Blueprint auto |
-| `TELEGRAM_BOT_TOKEN` | BotFather |
-| `TELEGRAM_ADMIN_CHAT_IDS` | Admin chat id(s), comma-separated |
-| `TELEGRAM_WEBHOOK_URL` | `https://u5-vpn-api.onrender.com` |
-| `PUBLIC_API_URL` | same as API URL |
-| `CORS_ORIGINS` | `https://u5-vpn-app.onrender.com` |
-| `VPN_DEMO_MODE` | `1` = demo key until X-UI wired |
-
-### `u5-vpn-app`
-
-| Key | ဥပမာ |
-|-----|--------|
-| `VITE_API_BASE_URL` | `https://u5-vpn-api.onrender.com` |
-
-Env ပြောင်းပြီး **Manual Deploy** ပြန်လုပ်ပါ။
-
----
-
-## ၃) Telegram
-
-1. BotFather → Web App URL: `https://u5-vpn-app.onrender.com`  
-2. Admin + users: bot မှာ `/start`  
-
----
-
-## ၄) Local dev
+## ၁) GitHub သို့ push
 
 ```bash
-cd server && cp .env.example .env   # DATABASE_URL, TELEGRAM_* ဖြည့်ပါ
-npm install && npm run dev
-
-# project root
-# .env: VITE_API_BASE_URL=http://localhost:3000
-npm install && npm run dev
+git add render.yaml RENDER.md server/ package.json ...
+git commit -m "Add Render blueprint and ssconf deployment"
+git push origin master
 ```
+
+Repo: https://github.com/novalink-cpu/novalink
 
 ---
 
-## ၅) X-UI panel
+## ၂) Render Blueprint (အလွယ်ဆုံး)
 
-`server/src/vpn.js` — set `VPN_DEMO_MODE=0` and `XUI_*` env when ready.
+1. https://dashboard.render.com → **New** → **Blueprint**
+2. Connect **novalink-cpu/novalink** → branch **master**
+3. `render.yaml` ကို အတည်ပြု → **Apply**
+4. Services ၃ ခု create ဖြစ်မယ် (api, app, db)
+
+ပထမဆုံး deploy ပြီးရင် URLs ကို မှတ်ပါ:
+
+- API: `https://novalink-api.onrender.com`
+- App: `https://novalink-app.onrender.com`
+
+---
+
+## ၃) Environment variables (Render Dashboard)
+
+### novalink-api → Environment
+
+| Key | Value |
+|-----|--------|
+| `TELEGRAM_BOT_TOKEN` | BotFather token |
+| `TELEGRAM_ADMIN_CHAT_IDS` | သင့် Telegram user/chat ID |
+| `OUTLINE_JP_API_URL` | Tokyo Outline Manager API URL |
+| `OUTLINE_JP_CERT_SHA256` | Tokyo cert fingerprint |
+| `OUTLINE_AU_API_URL` | Sydney (optional) |
+| `OUTLINE_AU_CERT_SHA256` | Sydney fingerprint |
+| `VPN_DEMO_MODE` | `0` (production keys) |
+| `VPN_USE_SSCONF` | `1` |
+
+`PUBLIC_API_URL`, `TELEGRAM_WEBHOOK_URL`, `CORS_ORIGINS`, `APP_PUBLIC_URL` — blueprint က service URL များနဲ့ ချိတ်ပေးထားပါတယ်။
+
+### novalink-app → Environment
+
+| Key | Value |
+|-----|--------|
+| `VITE_API_BASE_URL` | `https://novalink-api.onrender.com` (blueprint auto) |
+
+Deploy ပြီးရင် **Manual Deploy → Clear build cache & deploy** (env ပြောင်းလျှင် frontend rebuild လိုတတ်ပါတယ်)
+
+---
+
+## ၄) Telegram BotFather
+
+1. **Bot Settings → Menu Button → Web App**  
+   URL: `https://novalink-app.onrender.com`
+
+2. Webhook — API start လျှင် အလိုအလျောက် `setWebhook` ခေါ်ပါတယ်  
+   URL: `https://novalink-api.onrender.com/telegram/webhook`
+
+3. `TELEGRAM_USE_POLLING` — **မထားပါ** (Render မှာ 409 Conflict)
+
+---
+
+## ၅) စမ်းသပ်မှု
+
+```text
+GET https://novalink-api.onrender.com/health
+```
+
+မျှော်မှန်းချက်: `"ok": true`, `"vpnUseSsconf": true`
+
+Mini App → order → screenshot → admin **Approve** → user ကို `ssconf://novalink-api.onrender.com/vpn/c/....json` ရမယ်
+
+---
+
+## ၆) GitHub Pages (optional)
+
+Render static app အစား (သို့မဟုတ် အပြင်) GitHub Pages သုံးချင်ရင်:
+
+1. Repo → **Settings → Pages → Source: GitHub Actions**
+2. Variable: `VITE_API_BASE_URL` = `https://novalink-api.onrender.com`
+3. `master` push လျှင် workflow deploy လုပ်မယ်
+
+URL: `https://novalink-cpu.github.io/novalink/`
+
+BotFather Web App URL ကို အဲဒီ URL သို့ ပြောင်းနိုင်ပါတယ်။
+
+---
+
+## Troubleshooting
+
+| ပြဿနာ | ဖြေရှင်း |
+|--------|----------|
+| Mini App API မရ | `VITE_API_BASE_URL` မှန် + app **redeploy** |
+| CORS error | `CORS_ORIGINS` မှာ app URL ပါမပါ စစ် |
+| Approve ခလုတ် မလုပ် | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_IDS`, webhook HTTPS |
+| ssconf မရ | `PUBLIC_API_URL` = API URL, `VPN_USE_SSCONF=1` |
+| DB error | `novalink-db` linked, `DATABASE_URL` auto |
+| Free tier sleep | ပထမ request နှေးနိုင်သည် — normal |
+
+---
+
+## Custom domain (နောက်မှ)
+
+- `app.yourdomain.com` → novalink-app  
+- `api.yourdomain.com` → novalink-api  
+
+Env များကို custom URL များနဲ့ ပြန်ညှိပြီး app ကို rebuild လုပ်ပါ။

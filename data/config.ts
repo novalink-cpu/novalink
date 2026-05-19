@@ -90,7 +90,7 @@ export const FAQ_ITEMS = [
   {
     id: 'connect',
     q: 'Connect မရဘူး?',
-    a: 'Connect မရပါက အောက်ပါအချက်များကို စစ်ဆေးပါ👇\n\n• Internet ရှိ/မရှိ\n• Key မှန်/မမှန်\n• Outline App ထည့်ထား/မထား\n• App ကို restart လုပ်ပြီး ပြန်စမ်းကြည့်ပါ',
+    a: 'Connect မရပါက အောက်ပါအချက်များကို စစ်ဆေးပါ👇\n\n• Internet ရှိ/မရှိ\n• Key မှန်/မမှန် (ssconf:// link တစ်ကြောင်း လုံး)\n• Outline App ထည့်ထား/မထား\n• App ကို restart လုပ်ပြီး ပြန်စမ်းကြည့်ပါ\n• ssconf key သည် Tokyo + Sydney node အော်တို — မရရင် support ဆက်သွယ်ပါ',
   },
   {
     id: 'refund',

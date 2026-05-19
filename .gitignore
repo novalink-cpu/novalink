@@ -5,6 +5,7 @@ dist
 .env
 .env.*
 !.env.example
+deploy/.env
 
 # Secrets / local state
 scripts/set-notify-env.ps1
@@ -12,3 +13,4 @@ scripts/set-notify-env.ps1
 **/serviceAccount*.json
 scripts/.notify_state.json
 scripts/.venv
+.local-pgdata
