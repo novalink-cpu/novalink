@@ -11,9 +11,9 @@ const MENU_ITEMS: {
   icon: ReactNode;
   label: string;
   path: string;
-  featured?: boolean;
+  accent?: boolean;
 }[] = [
-  { icon: '🔐', label: 'VPN Key ဝယ်ရန်', path: '/buy', featured: true },
+  { icon: '🔐', label: 'VPN Key ဝယ်ရန်', path: '/buy', accent: true },
   { icon: <KeyIcon />, label: 'ကျွန်ုပ်၏ Active Keys', path: '/keys' },
   { icon: '📦', label: 'ဝယ်ယူခဲ့သည့် မှတ်တမ်းများ', path: '/orders' },
   { icon: '💰', label: 'စျေးနှုန်းကြည့်ရန်', path: '/prices' },
@@ -41,7 +41,7 @@ export function HomePage() {
             key={item.path}
             icon={item.icon}
             label={item.label}
-            featured={item.featured}
+            accent={item.accent}
             onClick={() => {
               haptic('selection');
               navigate(item.path);

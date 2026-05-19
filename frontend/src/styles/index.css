@@ -223,28 +223,29 @@ img {
   padding: 16px 18px;
   border: none;
   border-radius: var(--app-radius);
-  background: var(--app-blue-dark);
+  background: var(--app-green-dark);
   color: #fff;
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transition: transform 0.15s ease, background 0.15s ease;
   text-align: left;
 }
 
 .menu-btn:active {
   transform: scale(0.98);
-  background: #0d47a1;
+  background: #357a30;
 }
 
-.menu-btn--featured {
-  background: var(--app-blue);
-  box-shadow: 0 3px 12px rgba(26, 115, 232, 0.35);
+/* VPN Key ဝယ်ရန် + mobile (Android / iPhone) */
+.menu-btn--accent {
+  background: var(--app-blue-light);
+  box-shadow: 0 3px 12px rgba(66, 165, 245, 0.35);
 }
 
-.menu-btn--featured:active {
-  background: #1565c0;
+.menu-btn--accent:active {
+  background: #1e88e5;
 }
 
 .menu-btn__icon {

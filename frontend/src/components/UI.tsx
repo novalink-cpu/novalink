@@ -4,12 +4,12 @@ interface MenuButtonProps {
   icon: ReactNode;
   label: string;
   onClick: () => void;
-  /** Main CTA — slightly lighter green than other menu items */
-  featured?: boolean;
+  /** Light blue — VPN ဝယ်ရန် / mobile platforms */
+  accent?: boolean;
 }
 
-export function MenuButton({ icon, label, onClick, featured }: MenuButtonProps) {
-  const className = ['menu-btn', featured ? 'menu-btn--featured' : ''].filter(Boolean).join(' ');
+export function MenuButton({ icon, label, onClick, accent }: MenuButtonProps) {
+  const className = ['menu-btn', accent ? 'menu-btn--accent' : ''].filter(Boolean).join(' ');
 
   return (
     <button type="button" className={className} onClick={onClick}>

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { MessageBubble } from '@/components/MessageBubble';
 import { MenuButton } from '@/components/UI';
-import { BUY_PLATFORMS, getRegionForPlatform } from '@data/config';
+import { BUY_PLATFORMS, getRegionForPlatform, MOBILE_PLATFORM_IDS } from '@data/config';
 import { useTelegram } from '@/hooks/useTelegram';
 import { savePurchaseDraft } from '@data/store/appStore';
 
@@ -22,6 +22,7 @@ export function BuyPlatformPage() {
             key={platform.id}
             icon={platform.icon}
             label={platform.label}
+            accent={MOBILE_PLATFORM_IDS.has(platform.id)}
             onClick={() => {
               haptic('selection');
               const region = getRegionForPlatform(platform.id);
