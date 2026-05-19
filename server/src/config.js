@@ -22,6 +22,11 @@ function loadOutlineServers() {
       servers[regionId] = { apiUrl, certSha256 };
     }
   }
+  // Singapore VPS creds were often stored under OUTLINE_JP_* before OUTLINE_SG_* existed
+  if (!servers.sg && servers.jp) {
+    console.warn('[config] OUTLINE_SG_* missing — using OUTLINE_JP_* for Singapore (sg)');
+    servers.sg = { ...servers.jp };
+  }
   return servers;
 }
 
