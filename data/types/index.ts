@@ -1,10 +1,4 @@
-export type OrderStatus =
-  | 'pending'
-  | 'paid'
-  | 'verified'
-  | 'completed'
-  | 'rejected'
-  | 'cancelled';
+export type OrderStatus = 'pending' | 'completed' | 'rejected';
 
 export type OrderType = 'purchase' | 'renew';
 

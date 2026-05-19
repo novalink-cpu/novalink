@@ -13,7 +13,7 @@ export function PaymentPage() {
   const { haptic, user } = useTelegram();
   const userId = getUserId(user);
   const draft = getPurchaseDraft();
-  const { order, loading, update } = useOrder(userId, draft.orderId);
+  const { order, loading } = useOrder(userId, draft.orderId);
   const method = PAYMENT_METHODS.find((p) => p.id === draft.paymentMethodId);
 
   useEffect(() => {
@@ -30,9 +30,8 @@ export function PaymentPage() {
     );
   }
 
-  const markPaid = async () => {
+  const goToScreenshot = () => {
     haptic('success');
-    await update({ status: 'paid' });
     navigate('/buy/verify');
   };
 
@@ -58,7 +57,7 @@ export function PaymentPage() {
       </Card>
 
       <NavFooter>
-        <ActionButton icon="✅" label="ငွေလွှဲပြီးပါပြီ" onClick={markPaid} />
+        <ActionButton icon="✅" label="ငွေလွှဲပြီးပါပြီ" onClick={goToScreenshot} />
         <ActionButton icon="🔄" label="Package ပြန်ရွေးမည်" variant="secondary" onClick={() => navigate('/buy/package')} />
       </NavFooter>
     </Layout>

@@ -122,7 +122,6 @@ export async function saveScreenshot(id, mime, buffer) {
     `UPDATE orders SET
       screenshot_mime = $1,
       screenshot_data = $2,
-      status = 'verified',
       updated_at = NOW()
      WHERE id = $3
      RETURNING *`,

@@ -1,4 +1,4 @@
-import type { Package, PaymentMethod, Region } from './types';
+import type { OrderStatus, Package, PaymentMethod, Region } from './types';
 
 export const APP_NAME = 'NovaLink MM';
 
@@ -190,14 +190,24 @@ export const GUIDE_PLATFORMS = [
   },
 ];
 
-export const ORDER_STATUS_LABELS: Record<string, string> = {
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'စောင့်ဆိုင်းဆဲ',
-  paid: 'ငွေချေပေးပြီး',
-  verified: 'အတည်ပြုချိန် စောင့်ဆိုင်း',
   completed: 'Key ရရှိပြီး',
   rejected: 'ငွေလွှဲ အတည်မပြု',
-  cancelled: 'ပယ်ဖျက်',
 };
+
+/** DB မှာ ရှိနေသေးသော paid / verified / cancelled → pending အဖြစ် ပြသသည် */
+const LEGACY_PENDING_STATUSES = new Set(['paid', 'verified', 'cancelled']);
+
+export function normalizeOrderStatus(status: string): OrderStatus {
+  if (LEGACY_PENDING_STATUSES.has(status)) return 'pending';
+  if (status === 'completed' || status === 'rejected') return status;
+  return 'pending';
+}
+
+export function getOrderStatusLabel(status: string): string {
+  return ORDER_STATUS_LABELS[normalizeOrderStatus(status)];
+}
 
 /** Legacy page (`InstructionsPage`) — route redirects to `/guide`. */
 export const INSTRUCTIONS: { title: string; steps: string[] }[] = [];

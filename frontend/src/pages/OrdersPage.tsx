@@ -1,6 +1,6 @@
 import { Layout } from '@/components/Layout';
 import { Card, InfoRow } from '@/components/UI';
-import { ORDER_STATUS_LABELS } from '@data/config';
+import { getOrderStatusLabel, normalizeOrderStatus } from '@data/config';
 import { useOrders } from '@/hooks/useOrder';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getUserId } from '@/lib/userId';
@@ -33,8 +33,10 @@ export function OrdersPage() {
                 icon="📌"
                 label="Status"
                 value={
-                  <span className={`status-badge status-badge--${order.status}`}>
-                    {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                  <span
+                    className={`status-badge status-badge--${normalizeOrderStatus(order.status)}`}
+                  >
+                    {getOrderStatusLabel(order.status)}
                   </span>
                 }
               />

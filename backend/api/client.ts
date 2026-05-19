@@ -107,7 +107,7 @@ export async function renderSubmitPayment(
   );
   return {
     order: data.order,
-    message: data.message ?? 'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ',
+    message: data.message ?? 'တင်ပြပြီးပါပြီ — စောင့်ဆိုင်းဆဲ',
   };
 }
 

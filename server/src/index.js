@@ -172,11 +172,11 @@ app.post(
       res.json({
         success: true,
         order: withPublicUrls(order),
-        message: 'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ',
+        message: 'တင်ပြပြီးပါပြီ — စောင့်ဆိုင်းဆဲ',
       });
 
       notifyAdminNewPayment(
-        { ...row, reference, status: 'verified' },
+        { ...row, reference, status: 'pending' },
         req.file.buffer,
         mime,
       ).catch((err) => {

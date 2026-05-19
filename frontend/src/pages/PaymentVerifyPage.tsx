@@ -60,7 +60,7 @@ export function PaymentVerifyPage() {
       haptic('success');
       const msg =
         updated.submitMessage ??
-        'တင်ပြပြီးပါပြီ — Admin အတည်ပြုချိန် စောင့်ပါ';
+        'တင်ပြပြီးပါပြီ — စောင့်ဆိုင်းဆဲ';
       setSuccessMessage(msg);
       try {
         await update({

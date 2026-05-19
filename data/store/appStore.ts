@@ -38,7 +38,7 @@ async function resolveServerOrderId(
   try {
     const orders = await renderGetOrders(userId);
     const open = orders.filter((o) =>
-      ['pending', 'paid', 'verified'].includes(o.status),
+      o.status === 'pending' || o.status === 'paid' || o.status === 'verified',
     );
     let pool = open;
     if (draft?.regionId) {
