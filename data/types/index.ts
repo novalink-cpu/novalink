@@ -60,7 +60,10 @@ export interface VpnKey {
 }
 
 export interface PurchaseDraft {
+  platformId?: string;
+  platformLabel?: string;
   regionId?: string;
+  regionName?: string;
   packageId?: string;
   orderId?: number;
   paymentMethodId?: string;

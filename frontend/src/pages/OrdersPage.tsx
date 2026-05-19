@@ -12,7 +12,7 @@ export function OrdersPage() {
 
   return (
     <Layout>
-      <Card title="အော်ဒါများ" icon="📦">
+      <Card title="ဝယ်ယူခဲ့သည့် မှတ်တမ်းများ" icon="📦">
         {loading && <div className="empty-state">Loading...</div>}
         {error && <div className="alert-box alert-box--info">{error}</div>}
         {!loading && !error && orders.length === 0 && (
@@ -26,7 +26,6 @@ export function OrdersPage() {
             <div key={order.id} className="key-card">
               <InfoRow icon="📋" label="Order ID" value={order.id} />
               {order.orderType === 'renew' && <InfoRow icon="🔄" label="အမျိုးအစား" value="သက်တမ်းတိုင်" />}
-              <InfoRow icon="🌍" label="Region" value={order.regionName} />
               <InfoRow icon="📦" label="Package" value={order.packageLabel} />
               <InfoRow icon="💰" label="ငွေ" value={`${order.amount.toLocaleString()} MMK`} />
               <InfoRow
@@ -52,13 +51,6 @@ export function OrdersPage() {
                       ဖွင့်ကြည့်ရန်
                     </a>
                   }
-                />
-              )}
-              {order.accessUrl && (
-                <InfoRow
-                  icon="🔑"
-                  label="Key"
-                  value={<span className="key-card__url" style={{ margin: 0 }}>{order.accessUrl}</span>}
                 />
               )}
             </div>

@@ -8,7 +8,7 @@
 | **novalink-app** | `https://novalink-app.onrender.com` | Telegram Mini App (static) |
 | **novalink-db** | (internal) | PostgreSQL |
 
-Outline VPN servers (Tokyo/Sydney) stay on **Vultr** — Render မှာ API + DB + Mini App သာ။
+Outline VPN servers (Singapore/Tokyo/Sydney) stay on **Vultr** — Render မှာ API + DB + Mini App သာ။
 
 ---
 
@@ -46,9 +46,11 @@ Repo: https://github.com/novalink-cpu/novalink
 |-----|--------|
 | `TELEGRAM_BOT_TOKEN` | BotFather token |
 | `TELEGRAM_ADMIN_CHAT_IDS` | သင့် Telegram user/chat ID |
-| `OUTLINE_JP_API_URL` | Tokyo Outline Manager API URL |
+| `OUTLINE_SG_API_URL` | Singapore Outline Manager API URL |
+| `OUTLINE_SG_CERT_SHA256` | Singapore cert fingerprint |
+| `OUTLINE_JP_API_URL` | Tokyo (optional backup) |
 | `OUTLINE_JP_CERT_SHA256` | Tokyo cert fingerprint |
-| `OUTLINE_AU_API_URL` | Sydney (optional) |
+| `OUTLINE_AU_API_URL` | Sydney (optional backup) |
 | `OUTLINE_AU_CERT_SHA256` | Sydney fingerprint |
 | `VPN_DEMO_MODE` | `0` (production keys) |
 | `VPN_USE_SSCONF` | `1` |

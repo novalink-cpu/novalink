@@ -157,6 +157,11 @@ img {
   margin-top: 1px;
 }
 
+.welcome-name {
+  font-weight: 700;
+  color: #1a73e8;
+}
+
 .card {
   background: var(--app-white);
   border-radius: var(--app-radius);
@@ -228,6 +233,15 @@ img {
 .menu-btn:active {
   transform: scale(0.98);
   background: #357a30;
+}
+
+.menu-btn--featured {
+  background: var(--app-green);
+  box-shadow: 0 3px 12px rgba(92, 179, 86, 0.35);
+}
+
+.menu-btn--featured:active {
+  background: #4fa848;
 }
 
 .menu-btn__icon {

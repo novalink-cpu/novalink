@@ -6,9 +6,13 @@ export const WELCOME_TEXT =
   'မြန်ဆန်၊ တည်ငြိမ်ပြီး လုံခြုံတဲ့ Internet အသုံးပြုနိုင်ရန် Outline VPN Key များ ဝယ်ယူနိုင်ပါတယ်။';
 
 export const REGIONS: Region[] = [
+  { id: 'sg', name: 'Singapore', flagCode: 'sg', regionCode: 'sg' },
   { id: 'jp', name: 'Tokyo', flagCode: 'jp', regionCode: 'jp' },
   { id: 'au', name: 'Sydney', flagCode: 'au', regionCode: 'au' },
 ];
+
+/** ssconf / FAQ copy — configured region display names */
+export const REGION_NAMES_LABEL = REGIONS.map((r) => r.name).join(' + ');
 
 export function getFlagUrl(flagCode: string, width = 80) {
   return `https://flagcdn.com/w${width}/${flagCode.toLowerCase()}.png`;
@@ -16,6 +20,24 @@ export function getFlagUrl(flagCode: string, width = 80) {
 
 export function getRegionById(id: string) {
   return REGIONS.find((r) => r.id === id);
+}
+
+/** Mobile → Singapore API; PC → Tokyo (or server OUTLINE_PC_REGION) */
+export const MOBILE_PLATFORM_IDS = new Set(['android', 'ios']);
+export const PC_REGION_ID = 'jp';
+
+export function getBuyPlatformById(id: string) {
+  return GUIDE_PLATFORMS.find((p) => p.id === id);
+}
+
+export function getRegionIdForPlatform(platformId: string): string {
+  if (MOBILE_PLATFORM_IDS.has(platformId)) return 'sg';
+  return PC_REGION_ID;
+}
+
+export function getRegionForPlatform(platformId: string) {
+  const regionId = getRegionIdForPlatform(platformId);
+  return getRegionById(regionId) ?? REGIONS[0];
 }
 
 export const PACKAGES: Package[] = [
@@ -90,7 +112,7 @@ export const FAQ_ITEMS = [
   {
     id: 'connect',
     q: 'Connect မရဘူး?',
-    a: 'Connect မရပါက အောက်ပါအချက်များကို စစ်ဆေးပါ👇\n\n• Internet ရှိ/မရှိ\n• Key မှန်/မမှန် (ssconf:// link တစ်ကြောင်း လုံး)\n• Outline App ထည့်ထား/မထား\n• App ကို restart လုပ်ပြီး ပြန်စမ်းကြည့်ပါ\n• ssconf key သည် Tokyo + Sydney node အော်တို — မရရင် support ဆက်သွယ်ပါ',
+    a: 'Connect မရပါက အောက်ပါအချက်များကို စစ်ဆေးပါ👇\n\n• Internet ရှိ/မရှိ\n• Key မှန်/မမှန် (ssconf:// link တစ်ကြောင်း လုံး)\n• Outline App ထည့်ထား/မထား\n• App ကို restart လုပ်ပြီး ပြန်စမ်းကြည့်ပါ\n• Mobile နဲ့ PC key မတူပါ — ဝယ်ယူခဲ့သည့် device အမျိုးအစားနှင့် ကိုက်ညီရမည်\n• မရရင် support ဆက်သွယ်ပါ',
   },
   {
     id: 'refund',
@@ -189,6 +211,9 @@ export const GUIDE_PLATFORMS = [
     ],
   },
 ];
+
+/** VPN ဝယ်ယူမှု — device ရွေးချယ်ခြင်း (guide နဲ့ တူညီ icon/label) */
+export const BUY_PLATFORMS = GUIDE_PLATFORMS;
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'စောင့်ဆိုင်းဆဲ',

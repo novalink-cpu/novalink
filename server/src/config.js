@@ -7,9 +7,10 @@ function trim(v) {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-/** Region id (jp, au) → Outline Management API credentials */
+/** Region id (sg, jp, au) → Outline Management API credentials */
 function loadOutlineServers() {
   const map = {
+    sg: { apiUrl: 'OUTLINE_SG_API_URL', cert: 'OUTLINE_SG_CERT_SHA256' },
     jp: { apiUrl: 'OUTLINE_JP_API_URL', cert: 'OUTLINE_JP_CERT_SHA256' },
     au: { apiUrl: 'OUTLINE_AU_API_URL', cert: 'OUTLINE_AU_CERT_SHA256' },
   };
@@ -68,6 +69,8 @@ export const config = {
   trustProxy: !['0', 'false', 'no'].includes(
     trim(process.env.TRUST_PROXY || '1').toLowerCase(),
   ),
+  /** PC platforms (windows, macos, linux) → Outline region id */
+  outlinePcRegion: trim(process.env.OUTLINE_PC_REGION || 'jp').toLowerCase() || 'jp',
 };
 
 export function assertConfig() {
@@ -90,7 +93,7 @@ export function assertConfig() {
     console.warn('[config] APP_PUBLIC_URL or CORS_ORIGINS not set — Mini App CORS may block.');
   }
   if (!config.vpnDemoMode) {
-    const missing = ['jp', 'au'].filter((r) => !config.outlineServers[r]);
+    const missing = ['sg', 'jp', 'au'].filter((r) => !config.outlineServers[r]);
     if (missing.length) {
       console.warn(
         `[config] Outline not configured for: ${missing.join(', ')} — approve will fail for those regions`,

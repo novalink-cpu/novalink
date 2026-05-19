@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** GitHub Pages: /novalink/ — Render/local: / (default) */
+/** Production (Vultr): / — optional VITE_BASE_PATH for subpath hosting */
 const base = process.env.VITE_BASE_PATH || '/';
 
 export default defineConfig({

@@ -11,7 +11,7 @@ export const isRenderApiEnabled = isApiEnabled;
 
 export function apiConfigErrorMessage(): string {
   return (
-    'Backend API မချိတ်ရသေးပါ — .env ထဲ VITE_API_BASE_URL (ဥပမာ https://u5-vpn-api.onrender.com) ဖြည့်ပြီး npm run build ပြန်လုပ်ပါ။'
+    'Backend API မချိတ်ရသေးပါ — .env ထဲ VITE_API_BASE_URL (ဥပမာ https://api.domain.com) ဖြည့်ပြီး npm run build:prod ပြန်လုပ်ပါ။'
   );
 }
 

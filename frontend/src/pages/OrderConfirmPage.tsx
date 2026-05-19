@@ -78,7 +78,9 @@ export function OrderConfirmPage() {
     <Layout>
       <Card title="အော်ဒါဖန်တီးပြီးပါပြီ" icon="✅">
         <InfoRow icon="📋" label="Order ID" value={order.id} />
-        <InfoRow icon="🌍" label="Region" value={order.regionName} />
+        {draft.platformLabel && (
+          <InfoRow icon="📱" label="Device" value={draft.platformLabel} />
+        )}
         <InfoRow icon="📦" label="Package" value={order.packageLabel} />
         <InfoRow icon="💰" label="ကျသင့်ငွေ" value={`${order.amount.toLocaleString()} MMK`} />
       </Card>

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { MessageBubble } from '@/components/MessageBubble';
@@ -6,10 +7,15 @@ import { MenuButton } from '@/components/UI';
 import { APP_NAME, WELCOME_TEXT } from '@data/config';
 import { useTelegram } from '@/hooks/useTelegram';
 
-const MENU_ITEMS = [
-  { icon: '🔐', label: 'VPN Key ဝယ်ရန်', path: '/buy' },
+const MENU_ITEMS: {
+  icon: ReactNode;
+  label: string;
+  path: string;
+  featured?: boolean;
+}[] = [
+  { icon: '🔐', label: 'VPN Key ဝယ်ရန်', path: '/buy', featured: true },
   { icon: <KeyIcon />, label: 'ကျွန်ုပ်၏ Active Keys', path: '/keys' },
-  { icon: '📦', label: 'အော်ဒါများ', path: '/orders' },
+  { icon: '📦', label: 'ဝယ်ယူခဲ့သည့် မှတ်တမ်းများ', path: '/orders' },
   { icon: '💰', label: 'စျေးနှုန်းကြည့်ရန်', path: '/prices' },
   { icon: '📱', label: 'အသုံးပြုပုံ', path: '/guide' },
   { icon: '🔄', label: 'Key သက်တမ်းတိုးရန်', path: '/renew' },
@@ -24,7 +30,7 @@ export function HomePage() {
   return (
     <Layout>
       <MessageBubble icon="🔐">
-        မင်္ဂလာပါ <strong>{displayName}</strong> — {APP_NAME} မှ ကြိုဆိုပါတယ်။
+        မင်္ဂလာပါ <span className="welcome-name">{displayName}</span> — {APP_NAME} မှ ကြိုဆိုပါတယ်။
         <br />
         {WELCOME_TEXT}
         <br />
@@ -37,6 +43,7 @@ export function HomePage() {
             key={item.path}
             icon={item.icon}
             label={item.label}
+            featured={item.featured}
             onClick={() => {
               haptic('selection');
               navigate(item.path);

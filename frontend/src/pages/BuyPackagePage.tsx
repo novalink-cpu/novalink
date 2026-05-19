@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { MessageBubble } from '@/components/MessageBubble';
 import { ActionButton } from '@/components/UI';
-import { RegionFlag } from '@/components/RegionFlag';
-import { getRegionById, PACKAGES } from '@data/config';
+import { getBuyPlatformById, PACKAGES } from '@data/config';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getUserId } from '@/lib/userId';
 import { createOrderId, getPurchaseDraft, saveOrder, savePurchaseDraft } from '@data/store/appStore';
@@ -15,11 +14,11 @@ export function BuyPackagePage() {
   const { haptic, user } = useTelegram();
   const userId = getUserId(user);
   const draft = getPurchaseDraft();
-  const region = draft.regionId ? getRegionById(draft.regionId) : undefined;
+  const platform = draft.platformId ? getBuyPlatformById(draft.platformId) : undefined;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!region) {
+  if (!platform || !draft.regionId || !draft.regionName) {
     navigate('/buy', { replace: true });
     return null;
   }
@@ -36,8 +35,8 @@ export function BuyPackagePage() {
       const order: Order = {
         id: orderId,
         telegramUserId: userId,
-        regionId: region.id,
-        regionName: region.name,
+        regionId: draft.regionId!,
+        regionName: draft.regionName!,
         packageId: pkg.id,
         packageLabel: pkg.label,
         amount: pkg.price,
@@ -64,16 +63,12 @@ export function BuyPackagePage() {
   return (
     <Layout>
       <MessageBubble>
-        Region:{' '}
-        <strong className="region-label">
-          <RegionFlag flagCode={region.flagCode} size={22} />
-          {region.name}
-        </strong>
+        Device: <strong>{platform.label}</strong>
         <br />
         အောက်ပါ Package ကို ရွေးချယ်ပါ
       </MessageBubble>
 
-      {error && <div className="alert-box alert-box--info">{error}</div>}
+      {error ? <div className="alert-box alert-box--info">{error}</div> : null}
 
       <div className="menu-list">
         {PACKAGES.map((pkg) => (

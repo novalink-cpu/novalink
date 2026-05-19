@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { completeOrder, getOrderByIdAdmin, rejectOrder } from './db.js';
 import { parseOrderId } from './orderId.js';
 import { createVpnKey } from './vpn.js';
+import { REGION_LABELS } from './vpnSubscription.js';
 import { sendUserMessage, tg } from './telegramApi.js';
 
 function actionSecret() {
@@ -54,8 +55,10 @@ export async function approveOrderById(orderId) {
   }
   await completeOrder(id, accessUrl, expiresAt, vpnMeta);
 
+  const primaryRegion = String(row.region_id || '').toLowerCase();
+  const regionHint = REGION_LABELS[primaryRegion] || primaryRegion || 'VPN';
   const ssconfHint = String(accessUrl).startsWith('ssconf://')
-    ? 'Outline app ထဲ key ထည့်ပါ — Tokyo + Sydney node အော်တို (ssconf)'
+    ? `Outline app ထဲ key ထည့်ပါ — ${regionHint} server (ssconf)`
     : 'Outline app ထဲ key ထည့်ပါ';
 
   try {

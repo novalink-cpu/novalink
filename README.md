@@ -1,6 +1,6 @@
 # NovaLink MM — Telegram Mini App + Outline VPN
 
-VPN key ဝယ်ယူမှု (Telegram Mini App) + Admin Approve + **Outline VPN** (Tokyo / Sydney) on **Vultr**.
+VPN key ဝယ်ယူမှု (Telegram Mini App) + Admin Approve + **Outline VPN** (Singapore / Tokyo / Sydney) on **Vultr**.
 
 ## Production
 
@@ -14,7 +14,7 @@ Repo: https://github.com/novalink-cpu/novalink → Render Blueprint (`render.yam
 | `novalink-app` | Mini App (BotFather Web App) |
 | `novalink-api` | API + webhook + `ssconf` JSON |
 
-Outline VPN servers: Vultr (Tokyo/Sydney) — env `OUTLINE_JP_*`, `OUTLINE_AU_*`
+Outline VPN servers: Vultr — env `OUTLINE_SG_*`, `OUTLINE_JP_*`, `OUTLINE_AU_*`
 
 ### Vultr + custom domain (optional)
 
@@ -92,11 +92,11 @@ Output: `dist/` → nginx `root /var/www/novalink/dist`
 
 ## Regions
 
-`data/config.ts` — Tokyo (`jp`), Sydney (`au`)
+`data/config.ts` — Singapore (`sg`), Tokyo (`jp`), Sydney (`au`)
 
 ## ssconf subscription (Qito-style)
 
-On approve, NovaLink creates Outline keys on **all configured regions** (jp + au) and sends one link:
+On approve, NovaLink creates Outline keys on **all configured regions** (sg + jp + au) and sends one link:
 
 `ssconf://api.domain.com/vpn/c/TOKEN.json#NovaLink-Order-42`
 

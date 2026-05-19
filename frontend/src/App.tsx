@@ -3,7 +3,7 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'r
 import { BottomMainMenu } from '@/components/BottomMainMenu';
 import { useTelegram } from '@/hooks/useTelegram';
 import { HomePage } from '@/pages/HomePage';
-import { BuyRegionPage } from '@/pages/BuyRegionPage';
+import { BuyPlatformPage } from '@/pages/BuyPlatformPage';
 import { BuyPackagePage } from '@/pages/BuyPackagePage';
 import { OrderConfirmPage } from '@/pages/OrderConfirmPage';
 import { PaymentPage } from '@/pages/PaymentPage';
@@ -82,7 +82,7 @@ export default function App() {
       <BottomMainMenu />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/buy" element={<BuyRegionPage />} />
+        <Route path="/buy" element={<BuyPlatformPage />} />
         <Route path="/buy/package" element={<BuyPackagePage />} />
         <Route path="/buy/confirm" element={<OrderConfirmPage />} />
         <Route path="/buy/payment" element={<PaymentPage />} />

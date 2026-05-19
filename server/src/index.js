@@ -79,7 +79,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-/** ssconf:// — Outline app fetches server list (Tokyo + Sydney, etc.) */
+/** ssconf:// — Outline app fetches server list (Singapore + Tokyo + Sydney, etc.) */
 app.get('/vpn/c/:token.json', async (req, res) => {
   try {
     const token = String(req.params.token || '').trim();

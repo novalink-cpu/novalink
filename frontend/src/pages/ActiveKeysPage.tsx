@@ -114,7 +114,7 @@ export function ActiveKeysPage() {
             )}
             {key.accessUrl.startsWith('ssconf://') && (
               <p style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-                ssconf — Outline app ထဲ paste လုပ်ပါ (Tokyo + Sydney)
+                ssconf — Outline app ထဲ paste လုပ်ပါ
               </p>
             )}
             <div className="key-card__url">{key.accessUrl}</div>

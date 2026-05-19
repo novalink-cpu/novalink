@@ -4,11 +4,15 @@ interface MenuButtonProps {
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  /** Main CTA — slightly lighter green than other menu items */
+  featured?: boolean;
 }
 
-export function MenuButton({ icon, label, onClick }: MenuButtonProps) {
+export function MenuButton({ icon, label, onClick, featured }: MenuButtonProps) {
+  const className = ['menu-btn', featured ? 'menu-btn--featured' : ''].filter(Boolean).join(' ');
+
   return (
-    <button type="button" className="menu-btn" onClick={onClick}>
+    <button type="button" className={className} onClick={onClick}>
       <span className="menu-btn__icon">{icon}</span>
       <span>{label}</span>
     </button>

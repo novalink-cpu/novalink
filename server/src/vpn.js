@@ -2,7 +2,7 @@ import { createDemoSubscription, createMultiRegionVpnSubscription } from './vpnS
 import { config } from './config.js';
 
 /**
- * Admin Approve — multi-region Outline keys + ssconf:// subscription (jp + au).
+ * Admin Approve — multi-region Outline keys + ssconf:// subscription (sg + jp + au).
  */
 export async function createVpnKey(orderRow) {
   if (config.vpnDemoMode) {

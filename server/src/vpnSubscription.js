@@ -3,21 +3,18 @@ import { config } from './config.js';
 import { createOutlineAccessKey } from './outline.js';
 import { parseSsAccessUrl } from './ssUrl.js';
 
-const REGION_LABELS = {
+export const REGION_LABELS = {
+  sg: 'Singapore',
   jp: 'Tokyo',
   au: 'Sydney',
 };
 
-/** Regions to provision: order region first, then other configured regions. */
+export const DEFAULT_REGION_ID = 'sg';
+
+/** Single region per order (mobile → sg, PC → jp/au per platform mapping). */
 export function regionsForSubscription(orderRegionId) {
-  const preferred = String(orderRegionId || 'jp').toLowerCase();
-  const configured = Object.keys(config.outlineServers);
-  const ordered = [];
-  if (configured.includes(preferred)) ordered.push(preferred);
-  for (const id of configured) {
-    if (!ordered.includes(id)) ordered.push(id);
-  }
-  return ordered;
+  const id = String(orderRegionId || DEFAULT_REGION_ID).toLowerCase();
+  return [id];
 }
 
 export function generateConfigToken() {
@@ -112,7 +109,7 @@ export async function createMultiRegionVpnSubscription(orderRow) {
   if (useSsconf) {
     accessUrl = buildSsconfUrl(token, orderId);
   } else {
-    const primary = String(orderRow.region_id || 'jp').toLowerCase();
+    const primary = String(orderRow.region_id || DEFAULT_REGION_ID).toLowerCase();
     const primaryNode =
       nodes.find((n) => n.regionId === primary) || nodes[0];
     accessUrl = rebuildSsUrl(primaryNode, `NovaLink-Order-${orderId}`);
@@ -136,28 +133,42 @@ function rebuildSsUrl(node, name) {
   return `ss://${creds}@${host}:${port}/?outline=1#${tag}`;
 }
 
+const DEMO_NODES = {
+  sg: {
+    regionId: 'sg',
+    outlineKeyId: null,
+    server: 'singapore.demo.novalink',
+    server_port: 443,
+    method: 'chacha20-ietf-poly1305',
+    remarks: 'Singapore (demo)',
+  },
+  jp: {
+    regionId: 'jp',
+    outlineKeyId: null,
+    server: 'tokyo.demo.novalink',
+    server_port: 443,
+    method: 'chacha20-ietf-poly1305',
+    remarks: 'Tokyo (demo)',
+  },
+  au: {
+    regionId: 'au',
+    outlineKeyId: null,
+    server: 'sydney.demo.novalink',
+    server_port: 443,
+    method: 'chacha20-ietf-poly1305',
+    remarks: 'Sydney (demo)',
+  },
+};
+
 export function createDemoSubscription(orderRow) {
   const orderId = orderRow.id;
   const token = generateConfigToken();
-  const primary = String(orderRow.region_id || 'jp').toLowerCase();
+  const primary = String(orderRow.region_id || DEFAULT_REGION_ID).toLowerCase();
+  const template = DEMO_NODES[primary] || DEMO_NODES.sg;
   const nodes = [
     {
-      regionId: 'jp',
-      outlineKeyId: null,
-      server: 'tokyo.demo.novalink',
-      server_port: 443,
-      method: 'chacha20-ietf-poly1305',
-      password: `demo-jp-${orderId}`,
-      remarks: 'Tokyo (demo)',
-    },
-    {
-      regionId: 'au',
-      outlineKeyId: null,
-      server: 'sydney.demo.novalink',
-      server_port: 443,
-      method: 'chacha20-ietf-poly1305',
-      password: `demo-au-${orderId}`,
-      remarks: 'Sydney (demo)',
+      ...template,
+      password: `demo-${primary}-${orderId}`,
     },
   ];
 
