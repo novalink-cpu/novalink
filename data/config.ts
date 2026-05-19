@@ -7,10 +7,7 @@ export const WELCOME_TEXT =
 
 export const REGIONS: Region[] = [
   { id: 'jp', name: 'Tokyo', flagCode: 'jp', regionCode: 'jp' },
-  { id: 'de', name: 'Germany', flagCode: 'de', regionCode: 'de' },
-  { id: 'sg', name: 'Singapore', flagCode: 'sg', regionCode: 'sg' },
-  { id: 'us', name: 'United States', flagCode: 'us', regionCode: 'us' },
-  { id: 'au', name: 'Australia', flagCode: 'au', regionCode: 'au' },
+  { id: 'au', name: 'Sydney', flagCode: 'au', regionCode: 'au' },
 ];
 
 export function getFlagUrl(flagCode: string, width = 80) {
@@ -195,10 +192,10 @@ export const GUIDE_PLATFORMS = [
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: 'စောင့်ဆိုင်းဆဲ',
-  paid: 'ငွေပေးပြီး — အတည်ပြုချိန်',
+  paid: 'ငွေချေပေးပြီး',
   verified: 'အတည်ပြုချိန် စောင့်ဆိုင်း',
-  completed: 'ပြီးမြောက် — Key ရရှိပြီး',
-  rejected: 'ငွေလွှဲ မအတည်ပြု',
+  completed: 'Key ရရှိပြီး',
+  rejected: 'ငွေလွှဲ အတည်မပြု',
   cancelled: 'ပယ်ဖျက်',
 };
 

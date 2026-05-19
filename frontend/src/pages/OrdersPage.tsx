@@ -4,7 +4,6 @@ import { ORDER_STATUS_LABELS } from '@data/config';
 import { useOrders } from '@/hooks/useOrder';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getUserId } from '@/lib/userId';
-import { isUsingApi } from '@data/store/appStore';
 
 export function OrdersPage() {
   const { user } = useTelegram();
@@ -14,9 +13,6 @@ export function OrdersPage() {
   return (
     <Layout>
       <Card title="အော်ဒါများ" icon="📦">
-        {isUsingApi() && (
-          <p style={{ fontSize: 13, color: '#2d7a28', marginBottom: 12 }}>🔗 Server API နှင့် ချိတ်ဆက်ထားသည်</p>
-        )}
         {loading && <div className="empty-state">Loading...</div>}
         {error && <div className="alert-box alert-box--info">{error}</div>}
         {!loading && !error && orders.length === 0 && (
