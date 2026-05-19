@@ -30,6 +30,7 @@ export interface Order {
   telegramUserId?: string;
   regionId: string;
   regionName: string;
+  platformLabel?: string;
   packageId: string;
   packageLabel: string;
   amount: number;

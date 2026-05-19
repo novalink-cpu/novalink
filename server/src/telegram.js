@@ -52,6 +52,7 @@ function formatOrderCaption(order) {
     '',
     `Order ID: ${order.id}`,
     `User (TG): ${order.telegram_user_id}`,
+    `Device: ${order.platform_label || '-'}`,
     `Region: ${order.region_name}`,
     `Package: ${order.package_label}`,
     `Amount: ${order.amount} MMK`,

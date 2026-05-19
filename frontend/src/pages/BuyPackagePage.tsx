@@ -37,6 +37,7 @@ export function BuyPackagePage() {
         telegramUserId: userId,
         regionId: draft.regionId!,
         regionName: draft.regionName!,
+        platformLabel: draft.platformLabel,
         packageId: pkg.id,
         packageLabel: pkg.label,
         amount: pkg.price,

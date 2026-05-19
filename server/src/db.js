@@ -27,10 +27,12 @@ export async function initDb() {
   const sqlDir = path.join(__dirname, '..', 'sql');
   const schema = fs.readFileSync(path.join(sqlDir, 'schema.sql'), 'utf8');
   await getPool().query(schema);
-  const migrationPath = path.join(sqlDir, 'migration_vpn_subscription.sql');
-  if (fs.existsSync(migrationPath)) {
-    const migration = fs.readFileSync(migrationPath, 'utf8');
-    await getPool().query(migration);
+  for (const name of ['migration_vpn_subscription.sql', 'migration_platform_label.sql']) {
+    const migrationPath = path.join(sqlDir, name);
+    if (fs.existsSync(migrationPath)) {
+      const migration = fs.readFileSync(migrationPath, 'utf8');
+      await getPool().query(migration);
+    }
   }
 }
 
@@ -41,6 +43,7 @@ export function rowToOrder(row) {
     telegramUserId: row.telegram_user_id,
     regionId: row.region_id,
     regionName: row.region_name,
+    platformLabel: row.platform_label ?? undefined,
     packageId: row.package_id,
     packageLabel: row.package_label,
     packageMonths: row.package_months,
@@ -62,14 +65,15 @@ export function rowToOrder(row) {
 export async function createOrder(data) {
   const r = await getPool().query(
     `INSERT INTO orders (
-      telegram_user_id, region_id, region_name, package_id, package_label,
+      telegram_user_id, region_id, region_name, platform_label, package_id, package_label,
       package_months, amount, payment_method_id, payment_method_name, status, order_type
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     RETURNING *`,
     [
       data.telegramUserId,
       data.regionId,
       data.regionName,
+      data.platformLabel ?? null,
       data.packageId,
       data.packageLabel,
       data.packageMonths ?? 1,

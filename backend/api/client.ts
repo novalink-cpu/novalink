@@ -58,6 +58,7 @@ export async function renderCreateOrder(
         telegramUserId,
         regionId: order.regionId,
         regionName: order.regionName,
+        platformLabel: order.platformLabel,
         packageId: order.packageId,
         packageLabel: order.packageLabel,
         packageMonths: order.packageMonths,

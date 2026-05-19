@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS orders (
   telegram_user_id TEXT NOT NULL,
   region_id TEXT NOT NULL,
   region_name TEXT NOT NULL,
+  platform_label TEXT,
   package_id TEXT NOT NULL,
   package_label TEXT NOT NULL,
   package_months INT NOT NULL DEFAULT 1,

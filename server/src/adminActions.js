@@ -3,7 +3,6 @@ import { config } from './config.js';
 import { completeOrder, getOrderByIdAdmin, rejectOrder } from './db.js';
 import { parseOrderId } from './orderId.js';
 import { createVpnKey } from './vpn.js';
-import { REGION_LABELS } from './vpnSubscription.js';
 import { sendUserMessage, tg } from './telegramApi.js';
 
 function actionSecret() {
@@ -55,27 +54,20 @@ export async function approveOrderById(orderId) {
   }
   await completeOrder(id, accessUrl, expiresAt, vpnMeta);
 
-  const primaryRegion = String(row.region_id || '').toLowerCase();
-  const regionHint = REGION_LABELS[primaryRegion] || primaryRegion || 'VPN';
-  const ssconfHint = String(accessUrl).startsWith('ssconf://')
-    ? `Outline app ထဲ key ထည့်ပါ — ${regionHint} server (ssconf)`
-    : 'Outline app ထဲ key ထည့်ပါ';
-
   try {
     await sendUserMessage(
       row.telegram_user_id,
       [
-        `✅ Order #${id} အတည်ပြုပြီး — VPN Key`,
-        '',
-        accessUrl,
-        '',
-        ssconfHint,
+        `✅ Order #${id} အတည်ပြုပြီး`,
         '',
         `သက်တမ်းကုန်: ${new Date(expiresAt).toLocaleDateString('my-MM')}`,
         '',
         'Mini App → Active Keys မှလည်း ကူးယူနိုင်ပါသည်။',
+        '',
+        'အောက်က သင်၏ Activate Key ဖြစ်ပါတယ်ခင်ဗျာ',
       ].join('\n'),
     );
+    await sendUserMessage(row.telegram_user_id, accessUrl);
   } catch (e) {
     console.warn('[admin] send key to user failed', e.message);
   }

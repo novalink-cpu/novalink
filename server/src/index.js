@@ -150,6 +150,7 @@ app.post('/api/orders', async (req, res) => {
       telegramUserId,
       regionId: body.regionId,
       regionName: body.regionName,
+      platformLabel: body.platformLabel,
       packageId: body.packageId,
       packageLabel: body.packageLabel,
       packageMonths: body.packageMonths ?? 1,
