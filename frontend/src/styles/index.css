@@ -11,6 +11,9 @@
   --app-green: #5cb356;
   --app-green-dark: #3d8b37;
   --app-green-light: #7bc975;
+  --app-blue: #1a73e8;
+  --app-blue-dark: #1565c0;
+  --app-blue-light: #42a5f5;
   --app-white: #ffffff;
   --app-text: #1c2b33;
   --app-text-muted: #5a6b75;
@@ -220,28 +223,28 @@ img {
   padding: 16px 18px;
   border: none;
   border-radius: var(--app-radius);
-  background: var(--app-green-dark);
+  background: var(--app-blue-dark);
   color: #fff;
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(21, 101, 192, 0.25);
   transition: transform 0.15s ease, background 0.15s ease;
   text-align: left;
 }
 
 .menu-btn:active {
   transform: scale(0.98);
-  background: #357a30;
+  background: #0d47a1;
 }
 
 .menu-btn--featured {
-  background: var(--app-green);
-  box-shadow: 0 3px 12px rgba(92, 179, 86, 0.35);
+  background: var(--app-blue);
+  box-shadow: 0 3px 12px rgba(26, 115, 232, 0.35);
 }
 
 .menu-btn--featured:active {
-  background: #4fa848;
+  background: #1565c0;
 }
 
 .menu-btn__icon {

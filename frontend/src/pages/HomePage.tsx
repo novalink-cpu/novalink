@@ -33,8 +33,6 @@ export function HomePage() {
         မင်္ဂလာပါ <span className="welcome-name">{displayName}</span> — {APP_NAME} မှ ကြိုဆိုပါတယ်။
         <br />
         {WELCOME_TEXT}
-        <br />
-        အောက်က Menu မှာ မိမိလိုအပ်တာကို ရွေးချယ်ပြီး ဆက်လုပ်ပါ👇
       </MessageBubble>
 
       <div className="menu-list">

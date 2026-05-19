@@ -13,7 +13,7 @@ export function BuyPlatformPage() {
   return (
     <Layout>
       <MessageBubble>
-        အသုံးပြုမည့် Device အမျိုးအစားကို ရွေးချယ်ပါ👇
+        အသုံးပြုမည့် Device အမျိုးအစားကို ရွေးချယ်ပါ
       </MessageBubble>
 
       <div className="menu-list">

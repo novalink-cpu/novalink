@@ -65,7 +65,7 @@ export function BuyPackagePage() {
       <MessageBubble>
         Device: <strong>{platform.label}</strong>
         <br />
-        အောက်ပါ Package ကို ရွေးချယ်ပါ
+        ဝယ်ယူလိုသည့် Package ကို ရွေးချယ်ပါ
       </MessageBubble>
 
       {error ? <div className="alert-box alert-box--info">{error}</div> : null}
