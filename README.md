@@ -96,8 +96,11 @@ Output: `dist/` → nginx `root /var/www/novalink/dist`
 
 ## ssconf subscription (Qito-style)
 
-On approve, NovaLink creates Outline keys on **all configured regions** (sg + jp + au) and sends one link:
+On approve, NovaLink creates one Outline key per order:
 
-`ssconf://api.domain.com/vpn/c/TOKEN.json#NovaLink-Order-42`
+| Device | Region | Key format |
+|--------|--------|------------|
+| Android / iPhone | Singapore (`sg`) | `ss://...@IP:443/?outline=1#...` |
+| Windows / macOS / Linux | PC (`jp` / `au`) | `ssconf://api.domain.com/vpn/c/TOKEN.json#...` |
 
-Outline app fetches `GET /vpn/c/:token.json` for the server list. Set `VPN_USE_SSCONF=1` and `PUBLIC_API_URL` (default on).
+Set `VPN_USE_SSCONF=1` and `PUBLIC_API_URL` for PC ssconf keys.

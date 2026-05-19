@@ -11,6 +11,12 @@ export const REGION_LABELS = {
 
 export const DEFAULT_REGION_ID = 'sg';
 
+/** Singapore (mobile): direct ss:// — PC regions: ssconf:// when enabled. */
+export function shouldUseSsconfForRegion(regionId) {
+  if (!config.vpnUseSsconf || !config.publicApiUrl) return false;
+  return String(regionId || '').toLowerCase() !== 'sg';
+}
+
 /** Single region per order (mobile → sg, PC → jp/au per platform mapping). */
 export function regionsForSubscription(orderRegionId) {
   const id = String(orderRegionId || DEFAULT_REGION_ID).toLowerCase();
@@ -100,18 +106,14 @@ export async function createMultiRegionVpnSubscription(orderRow) {
   const expires = new Date();
   expires.setMonth(expires.getMonth() + months);
 
-  const useSsconf =
-    config.vpnUseSsconf &&
-    config.publicApiUrl &&
-    nodes.length >= 1;
+  const primary = String(orderRow.region_id || DEFAULT_REGION_ID).toLowerCase();
+  const primaryNode = nodes.find((n) => n.regionId === primary) || nodes[0];
+  const useSsconf = shouldUseSsconfForRegion(primary);
 
   let accessUrl;
   if (useSsconf) {
     accessUrl = buildSsconfUrl(token, orderId);
   } else {
-    const primary = String(orderRow.region_id || DEFAULT_REGION_ID).toLowerCase();
-    const primaryNode =
-      nodes.find((n) => n.regionId === primary) || nodes[0];
     accessUrl = rebuildSsUrl(primaryNode, `NovaLink-Order-${orderId}`);
   }
 
@@ -176,7 +178,7 @@ export function createDemoSubscription(orderRow) {
   const expires = new Date();
   expires.setMonth(expires.getMonth() + months);
 
-  const useSsconf = config.vpnUseSsconf && config.publicApiUrl;
+  const useSsconf = shouldUseSsconfForRegion(primary);
   const accessUrl = useSsconf
     ? buildSsconfUrl(token, orderId)
     : rebuildSsUrl(
