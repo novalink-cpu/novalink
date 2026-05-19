@@ -319,6 +319,15 @@ img {
   color: #fff;
 }
 
+.action-btn--accent {
+  background: var(--app-blue-light);
+  color: #fff;
+}
+
+.action-btn--accent:active {
+  background: var(--app-blue);
+}
+
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

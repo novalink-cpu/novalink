@@ -21,12 +21,16 @@ export function SupportPage() {
   useEffect(() => {
     getOrders(userId)
       .then((list) => {
-        const eligible = list.filter(
-          (o) =>
-            o.status === 'completed' &&
-            o.accessUrl &&
-            o.orderType !== 'renew',
-        );
+        const now = Date.now();
+        const eligible = list
+          .filter(
+            (o) =>
+              o.status === 'completed' &&
+              o.accessUrl &&
+              o.orderType !== 'renew' &&
+              (!o.expiresAt || new Date(o.expiresAt).getTime() > now),
+          )
+          .sort((a, b) => b.id - a.id);
         setOrders(eligible);
         if (eligible.length === 1) setSelectedId(eligible[0].id);
       })
@@ -92,7 +96,7 @@ export function SupportPage() {
         <div className="empty-state">Loading...</div>
       ) : orders.length === 0 ? (
         <p style={{ fontSize: 14, color: '#5a6b75', textAlign: 'center', margin: '12px 0' }}>
-          completed အော်ဒါ မရှိသေးပါ — VPN Key ဝယ်ယူပြီးမှ တင်ပြနိုင်ပါသည်။
+          သက်တမ်းကျန်သော Key မရှိပါ — VPN Key ဝယ်ယူပါ သို့မဟုတ် သက်တမ်းတိုး သုံးပါ။
         </p>
       ) : (
         <div className="menu-list">
@@ -110,6 +114,7 @@ export function SupportPage() {
           ))}
           <ActionButton
             icon="📤"
+            variant="accent"
             label={submitting ? 'တင်ပြနေသည်...' : 'Key ချိတ်မရ — Admin ဆီ တင်ပြရန်'}
             onClick={handleSubmitKeyIssue}
             disabled={!selectedId || submitting}
