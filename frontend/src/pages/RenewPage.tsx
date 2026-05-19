@@ -6,7 +6,7 @@ import { ActionButton } from '@/components/UI';
 import { PACKAGES } from '@data/config';
 import { useTelegram } from '@/hooks/useTelegram';
 import { getUserId } from '@/lib/userId';
-import { createOrderId, getLastOrderRegion, saveOrder, savePurchaseDraft } from '@data/store/appStore';
+import { createOrderId, getRenewTarget, saveOrder, savePurchaseDraft } from '@data/store/appStore';
 import type { Order } from '@data/types';
 
 const RENEW_LABELS: Record<string, string> = {
@@ -19,13 +19,17 @@ export function RenewPage() {
   const navigate = useNavigate();
   const { haptic, user } = useTelegram();
   const userId = getUserId(user);
-  const [region, setRegion] = useState<{ regionId: string; regionName: string } | null>(null);
+  const [target, setTarget] = useState<{
+    regionId: string;
+    regionName: string;
+    parentOrderId: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    getLastOrderRegion(userId)
-      .then(setRegion)
+    getRenewTarget(userId)
+      .then(setTarget)
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -35,7 +39,7 @@ export function RenewPage() {
   };
 
   const handleRenew = async (packageId: string) => {
-    if (!region || submitting) return;
+    if (!target || submitting) return;
     const pkg = PACKAGES.find((p) => p.id === packageId);
     if (!pkg) return;
 
@@ -46,17 +50,22 @@ export function RenewPage() {
       const order: Order = {
         id: orderId,
         telegramUserId: userId,
-        regionId: region.regionId,
-        regionName: region.regionName,
+        regionId: target.regionId,
+        regionName: target.regionName,
         packageId: pkg.id,
         packageLabel: pkg.label,
         amount: pkg.price,
         status: 'pending',
         orderType: 'renew',
+        renewParentOrderId: target.parentOrderId,
         createdAt: new Date().toISOString(),
       };
       const saved = await saveOrder(order, userId);
-      savePurchaseDraft({ regionId: region.regionId, packageId: pkg.id, orderId: saved.id });
+      savePurchaseDraft({
+        regionId: target.regionId,
+        packageId: pkg.id,
+        orderId: saved.id,
+      });
       navigate('/buy/confirm', { state: { order: saved } });
     } finally {
       setSubmitting(false);
@@ -71,7 +80,7 @@ export function RenewPage() {
     );
   }
 
-  if (!region) {
+  if (!target) {
     return (
       <Layout>
         <MessageBubble icon="🔑">
@@ -90,7 +99,9 @@ export function RenewPage() {
         Key သက်တမ်းတိုးလိုပါက Package ကို ရွေးချယ်ပါ 👇
         <br />
         <br />
-        ယခင်အသုံးပြုခဲ့သော Region ကိုအခြေခံပြီး Renewal Order အသစ်ဖန်တီးပေးပါမည်။
+        သက်တမ်းမကုန်သေးပါက Key အတူတူ — သက်တမ်းသာ တိုးပါမည်။
+        <br />
+        သက်တမ်းကုန်ပြီးပါက Key အသစ် ထုတ်ပေးပါမည်။
       </MessageBubble>
 
       <div className="menu-list">

@@ -1,4 +1,5 @@
 import { approveOrderById, rejectOrderById } from './adminActions.js';
+import { approveKeyIssueById, rejectKeyIssueById } from './supportActions.js';
 import { config } from './config.js';
 import { getOrderByIdAdmin } from './db.js';
 import { parseOrderId } from './orderId.js';
@@ -42,6 +43,18 @@ function adminKeyboard(orderId) {
   };
 }
 
+function keyFixKeyboard(supportRequestId) {
+  const id = String(supportRequestId);
+  return {
+    inline_keyboard: [
+      [
+        { text: '✅ Key အသစ် ထုတ်', callback_data: `keyfix_approve:${id}` },
+        { text: '❌ မလုပ်ပါ', callback_data: `keyfix_reject:${id}` },
+      ],
+    ],
+  };
+}
+
 function emptyKeyboard() {
   return { inline_keyboard: [] };
 }
@@ -76,6 +89,38 @@ async function editAdminMessage(query, caption) {
     await tg('editMessageCaption', { ...base, caption });
   } else {
     await tg('editMessageText', { ...base, text: caption });
+  }
+}
+
+function formatKeyIssueCaption(supportRow, orderRow) {
+  return [
+    '🔧 NovaLink — Key ချိတ်မရ တိုင်ကြားချက်',
+    '',
+    `Support ID: ${supportRow.id}`,
+    `Order ID: ${orderRow.id}`,
+    `User (TG): ${orderRow.telegram_user_id}`,
+    `Device: ${orderRow.platform_label || '-'}`,
+    `Region: ${orderRow.region_name}`,
+    `Package: ${orderRow.package_label}`,
+    `သက်တမ်းကုန်: ${orderRow.expires_at ? new Date(orderRow.expires_at).toLocaleDateString('my-MM') : '-'}`,
+    '',
+    '👇 Approve = အဟောင်း key ဖျက် + key အသစ် ထုတ်ပြီး user ဆီ ပို့',
+  ].join('\n');
+}
+
+/** Key ချိတ်မရ — admin Approve (rotate) / Reject */
+export async function notifyAdminKeyIssue(supportRow, orderRow) {
+  if (!config.adminChatIds.length) return;
+
+  const text = formatKeyIssueCaption(supportRow, orderRow);
+  const keyboard = keyFixKeyboard(supportRow.id);
+
+  for (const chatId of config.adminChatIds) {
+    await tg('sendMessage', {
+      chat_id: chatId,
+      text,
+      reply_markup: keyboard,
+    }).catch((e) => console.error('[telegram] key issue notify failed', e.message));
   }
 }
 
@@ -144,14 +189,68 @@ export async function handleCallbackQuery(query) {
     return;
   }
 
-  const [action, idStr] = data.split(':');
-  let orderId;
-  try {
-    orderId = parseOrderId(idStr);
-  } catch {
-    await answerCallback(query, 'မမှန်သော order ID', true);
+  const colon = data.indexOf(':');
+  if (colon < 0) {
+    await answerCallback(query, 'မမှန်သော ခလုတ်', true);
     return;
   }
+  const action = data.slice(0, colon);
+  const idStr = data.slice(colon + 1);
+  let entityId;
+  try {
+    entityId = parseOrderId(idStr);
+  } catch {
+    await answerCallback(query, 'မမှန်သော ID', true);
+    return;
+  }
+
+  if (action === 'keyfix_reject') {
+    await answerCallback(query, 'လုပ်ဆောင်နေသည်...');
+    const result = await rejectKeyIssueById(entityId);
+    if (result.ok) {
+      try {
+        const row = await getOrderByIdAdmin(result.orderId);
+        await editAdminMessage(
+          query,
+          `${formatKeyIssueCaption({ id: entityId, status: 'rejected' }, row)}\n\n❌ မလုပ်ပါ (rejected)`,
+        );
+      } catch (e) {
+        console.warn('[telegram] edit keyfix reject', e.message);
+      }
+    } else {
+      try {
+        await editAdminMessage(query, `❌ Reject မအောင်မြင်: ${result.error || 'Failed'}`);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+
+  if (action === 'keyfix_approve') {
+    await answerCallback(query, 'Key အသစ် ထုတ်နေသည်...');
+    const result = await approveKeyIssueById(entityId);
+    if (!result.ok) {
+      try {
+        await editAdminMessage(query, `❌ Key fix မအောင်မြင်: ${result.error || 'Failed'}`);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      const row = await getOrderByIdAdmin(result.orderId);
+      await editAdminMessage(
+        query,
+        `${formatKeyIssueCaption({ id: entityId, status: 'approved' }, row)}\n\n✅ Key အသစ် ထုတ်ပြီး user ဆီ ပို့ပြီး`,
+      );
+    } catch (e) {
+      console.warn('[telegram] edit keyfix approve', e.message);
+    }
+    return;
+  }
+
+  const orderId = entityId;
 
   if (action === 'reject') {
     await answerCallback(query, 'လုပ်ဆောင်နေသည်...');

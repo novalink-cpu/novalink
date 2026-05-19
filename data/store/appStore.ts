@@ -231,10 +231,39 @@ export function clearPurchaseDraft() {
 export async function getLastOrderRegion(
   userId: string,
 ): Promise<{ regionId: string; regionName: string } | null> {
+  const target = await getRenewTarget(userId);
+  if (!target) return null;
+  return { regionId: target.regionId, regionName: target.regionName };
+}
+
+/** Active or last completed purchase order used as renew parent. */
+export async function getRenewTarget(
+  userId: string,
+): Promise<{ regionId: string; regionName: string; parentOrderId: number } | null> {
   const orders = await getOrders(userId);
-  const found = orders.find((o) => o.regionId);
-  if (!found) return null;
-  return { regionId: found.regionId, regionName: found.regionName };
+  const now = Date.now();
+  const purchases = orders.filter(
+    (o) =>
+      o.status === 'completed' &&
+      o.accessUrl &&
+      o.orderType !== 'renew',
+  );
+
+  const active = purchases
+    .filter((o) => !o.expiresAt || new Date(o.expiresAt).getTime() > now)
+    .sort(
+      (a, b) =>
+        new Date(b.expiresAt || 0).getTime() - new Date(a.expiresAt || 0).getTime(),
+    );
+
+  const pick = active[0] ?? purchases[0];
+  if (!pick) return null;
+
+  return {
+    regionId: pick.regionId,
+    regionName: pick.regionName,
+    parentOrderId: pick.id,
+  };
 }
 
 export async function getActiveKeysFromOrders(userId: string): Promise<VpnKey[]> {
@@ -242,6 +271,7 @@ export async function getActiveKeysFromOrders(userId: string): Promise<VpnKey[]>
   const now = Date.now();
   return orders
     .filter((o) => o.accessUrl && o.status === 'completed')
+    .filter((o) => o.orderType !== 'renew')
     .filter((o) => !o.expiresAt || new Date(o.expiresAt).getTime() > now)
     .map((o) => ({
       id: `order-${o.id}`,

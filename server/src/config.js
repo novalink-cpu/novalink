@@ -95,6 +95,11 @@ export const config = {
   ),
   /** PC platforms (windows, macos, linux) → Outline region id */
   outlinePcRegion: trim(process.env.OUTLINE_PC_REGION || 'jp').toLowerCase() || 'jp',
+  /** How often to delete Outline keys for expired orders (default 15 min) */
+  vpnExpiryCheckMs: Math.max(
+    60_000,
+    Number(process.env.VPN_EXPIRY_CHECK_MINUTES || 15) * 60_000,
+  ),
 };
 
 export function assertConfig() {

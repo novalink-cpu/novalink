@@ -43,6 +43,8 @@ export interface Order {
   /** API-hosted screenshot URL */
   screenshotUrl?: string;
   orderType?: OrderType;
+  /** Completed purchase order to extend on renew approve */
+  renewParentOrderId?: number;
   accessUrl?: string;
   expiresAt?: string;
   createdAt: string;

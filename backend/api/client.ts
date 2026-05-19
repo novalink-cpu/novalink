@@ -67,6 +67,7 @@ export async function renderCreateOrder(
         paymentMethodName: order.paymentMethodName,
         status: order.status,
         orderType: order.orderType,
+        renewParentOrderId: order.renewParentOrderId,
       }),
     }),
   );
@@ -110,6 +111,24 @@ export async function renderSubmitPayment(
     order: data.order,
     message: data.message ?? 'တင်ပြပြီးပါပြီ — စောင့်ဆိုင်းဆဲ',
   };
+}
+
+export async function renderSubmitKeyIssue(
+  telegramUserId: string,
+  orderId: number,
+): Promise<{ message: string; supportRequestId: number }> {
+  const data = await parseJson<{
+    message: string;
+    supportRequestId: number;
+    ok: boolean;
+  }>(
+    await fetch(apiUrl('/api/support/key-issue'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegramUserId, orderId }),
+    }),
+  );
+  return { message: data.message, supportRequestId: data.supportRequestId };
 }
 
 export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {

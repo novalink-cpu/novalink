@@ -27,6 +27,9 @@ import {
   rejectOrderById,
   verifyAdminAction,
 } from './adminActions.js';
+import { startExpiryRevocationJob } from './expiryJob.js';
+import { submitKeyIssueReport } from './supportActions.js';
+import { notifyAdminKeyIssue } from './telegram.js';
 
 assertConfig();
 
@@ -159,11 +162,40 @@ app.post('/api/orders', async (req, res) => {
       paymentMethodName: body.paymentMethodName,
       status: body.status ?? 'pending',
       orderType: body.orderType ?? 'purchase',
+      renewParentOrderId: body.renewParentOrderId ?? null,
     });
     res.status(201).json({ order: withPublicUrls(order) });
   } catch (e) {
     const code = e.statusCode || 500;
     console.error(e);
+    res.status(code).json({ error: e.message });
+  }
+});
+
+/** User reports key connection issue → admin Telegram (rotate on approve) */
+app.post('/api/support/key-issue', async (req, res) => {
+  try {
+    const telegramUserId = String(req.body?.telegramUserId || '').trim();
+    const orderId = req.body?.orderId;
+    if (!telegramUserId) {
+      return res.status(400).json({ error: 'telegramUserId required' });
+    }
+    if (orderId == null || orderId === '') {
+      return res.status(400).json({ error: 'orderId required' });
+    }
+    const result = await submitKeyIssueReport(telegramUserId, orderId);
+    res.status(201).json({
+      ok: result.ok,
+      supportRequestId: result.supportRequestId,
+      orderId: result.orderId,
+      message: result.message,
+    });
+    notifyAdminKeyIssue(result.supportRow, result.adminOrder).catch((err) => {
+      console.error('[telegram] notifyAdminKeyIssue failed', err);
+    });
+  } catch (e) {
+    const code = e.statusCode || 500;
+    console.error('[support] key-issue', e);
     res.status(code).json({ error: e.message });
   }
 });
@@ -307,6 +339,7 @@ async function main() {
   await initDb();
   app.listen(config.port, config.host, () => {
     console.log(`[api] listening on http://${config.host}:${config.port}`);
+    startExpiryRevocationJob();
     initTelegramTransport().catch((e) => {
       console.error('[telegram] init failed', e);
     });
