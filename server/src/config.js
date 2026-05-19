@@ -7,6 +7,25 @@ function trim(v) {
   return typeof v === 'string' ? v.trim() : '';
 }
 
+/** Strip labels from Outline Manager / access.txt paste (apiUrl:https://...). */
+function cleanOutlineApiUrl(v) {
+  let s = trim(v).replace(/^apiUrl:\s*/i, '');
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1);
+  }
+  return s.trim();
+}
+
+function cleanOutlineCert(v) {
+  return trim(v)
+    .replace(/^(certSha256|certificateSha256|sha256):\s*/i, '')
+    .replace(/^["']|["']$/g, '')
+    .trim();
+}
+
 /** Region id (sg, jp, au) → Outline Management API credentials */
 function loadOutlineServers() {
   const map = {
@@ -16,8 +35,8 @@ function loadOutlineServers() {
   };
   const servers = {};
   for (const [regionId, keys] of Object.entries(map)) {
-    const apiUrl = trim(process.env[keys.apiUrl]);
-    const certSha256 = trim(process.env[keys.cert]);
+    const apiUrl = cleanOutlineApiUrl(process.env[keys.apiUrl]);
+    const certSha256 = cleanOutlineCert(process.env[keys.cert]);
     if (apiUrl && certSha256) {
       servers[regionId] = { apiUrl, certSha256 };
     }
