@@ -4,7 +4,7 @@ interface MenuButtonProps {
   icon: ReactNode;
   label: string;
   onClick: () => void;
-  /** Light blue — VPN ဝယ်ရန် / mobile platforms */
+  /** Orange — VPN ဝယ်ရန် / mobile platforms (Android, iPhone) */
   accent?: boolean;
 }
 
