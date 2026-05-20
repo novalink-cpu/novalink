@@ -48,8 +48,8 @@ function keyFixKeyboard(supportRequestId) {
   return {
     inline_keyboard: [
       [
-        { text: '✅ Key အသစ် ထုတ်', callback_data: `keyfix_approve:${id}` },
-        { text: '❌ မလုပ်ပါ', callback_data: `keyfix_reject:${id}` },
+        { text: '✅ Key အသစ် ပေးမည်', callback_data: `keyfix_approve:${id}` },
+        { text: '❌ ပယ်ဖျက်မည်', callback_data: `keyfix_reject:${id}` },
       ],
     ],
   };
@@ -210,7 +210,7 @@ export async function handleCallbackQuery(query) {
         const row = await getOrderByIdAdmin(result.orderId);
         await editAdminMessage(
           query,
-          `${formatKeyIssueCaption({ id: entityId, status: 'rejected' }, row)}\n\n❌ မလုပ်ပါ (rejected)`,
+          `${formatKeyIssueCaption({ id: entityId, status: 'rejected' }, row)}\n\n❌ ပယ်ဖျက်ပြီး`,
         );
       } catch (e) {
         console.warn('[telegram] edit keyfix reject', e.message);
@@ -226,7 +226,7 @@ export async function handleCallbackQuery(query) {
   }
 
   if (action === 'keyfix_approve') {
-    await answerCallback(query, 'Key အသစ် ထုတ်နေသည်...');
+    await answerCallback(query, 'Key အသစ် ပေးနေသည်...');
     const result = await approveKeyIssueById(entityId);
     if (!result.ok) {
       try {
@@ -240,7 +240,7 @@ export async function handleCallbackQuery(query) {
       const row = await getOrderByIdAdmin(result.orderId);
       await editAdminMessage(
         query,
-        `${formatKeyIssueCaption({ id: entityId, status: 'approved' }, row)}\n\n✅ Key အသစ် ထုတ်ပြီး user ဆီ ပို့ပြီး`,
+        `${formatKeyIssueCaption({ id: entityId, status: 'approved' }, row)}\n\n✅ Key အသစ် ပေးပြီး user ဆီ ပို့ပြီး`,
       );
     } catch (e) {
       console.warn('[telegram] edit keyfix approve', e.message);
