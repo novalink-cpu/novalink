@@ -103,8 +103,6 @@ function formatKeyIssueCaption(supportRow, orderRow) {
     `Region: ${orderRow.region_name}`,
     `Package: ${orderRow.package_label}`,
     `သက်တမ်းကုန်: ${orderRow.expires_at ? new Date(orderRow.expires_at).toLocaleDateString('my-MM') : '-'}`,
-    '',
-    '👇 Approve = အဟောင်း key ဖျက် + key အသစ် ထုတ်ပြီး user ဆီ ပို့',
   ].join('\n');
 }
 
