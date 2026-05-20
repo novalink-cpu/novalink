@@ -136,7 +136,7 @@ export async function rejectKeyIssueById(supportRequestId) {
       await sendUserMessage(
         order.telegram_user_id,
         [
-          `❌ Order #${order.id} — Key ပြင်ဆင်မှု မလုပ်ပေးနိုင်ပါ`,
+          `❌ Order #${order.id} — Key ပြင်ဆင်မှုအသစ် မလုပ်ဆောင်ပေးနိုင်သည့်အတွက် ခွင့်လွှတ်ပါ`,
           '',
           'Support ကို ဆက်သွယ်ပါ (သို့မဟုတ် သက်တမ်းတိုး/ဝယ်ယူမှု အသစ်)။',
         ].join('\n'),
