@@ -42,17 +42,6 @@ export function OrdersPage() {
               {order.paymentMethodName && (
                 <InfoRow icon="💳" label="Payment" value={order.paymentMethodName} />
               )}
-              {order.screenshotUrl && (
-                <InfoRow
-                  icon="📷"
-                  label="Screenshot"
-                  value={
-                    <a href={order.screenshotUrl} target="_blank" rel="noopener noreferrer">
-                      ဖွင့်ကြည့်ရန်
-                    </a>
-                  }
-                />
-              )}
             </div>
           ))}
       </Card>
