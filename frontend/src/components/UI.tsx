@@ -23,7 +23,8 @@ interface ActionButtonProps {
   icon?: ReactNode;
   label: ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'copied' | 'accent';
+  variant?: 'primary' | 'secondary' | 'outline' | 'copied' | 'accent' | 'order';
+  selected?: boolean;
   disabled?: boolean;
   type?: 'button' | 'submit';
 }
@@ -33,10 +34,15 @@ export function ActionButton({
   label,
   onClick,
   variant = 'primary',
+  selected,
   disabled,
   type = 'button',
 }: ActionButtonProps) {
-  const className = ['action-btn', variant !== 'primary' ? `action-btn--${variant}` : '']
+  const className = [
+    'action-btn',
+    variant !== 'primary' ? `action-btn--${variant}` : '',
+    selected ? 'action-btn--selected' : '',
+  ]
     .filter(Boolean)
     .join(' ');
 

@@ -111,6 +111,8 @@ export function SupportPage() {
           {orders.map((o) => (
             <ActionButton
               key={o.id}
+              variant="order"
+              selected={selectedId === o.id}
               icon={selectedId === o.id ? '✅' : '📋'}
               label={`Order #${o.id} — ${o.regionName} (${o.packageLabel})`}
               onClick={() => {
