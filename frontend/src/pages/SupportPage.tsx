@@ -71,23 +71,31 @@ export function SupportPage() {
 
   return (
     <Layout>
-      <Card title="အကူအညီဆက်သွယ်ရန်" icon="📞">
-        <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 16 }}>
-          📞 အကူအညီလိုပါက အောက်ပါအတိုင်း ဆက်သွယ်နိုင်ပါတယ်👇
-        </p>
+      <Card>
+        <div className="step-item support-step">
+          <span className="step-item__num">1</span>
+          <div style={{ flex: 1 }}>
+            <p className="step-item__title" style={{ marginBottom: 8 }}>
+              အကူအညီဆက်သွယ်ရန်
+            </p>
+            <p style={{ fontSize: 15, lineHeight: 1.6, marginBottom: 16 }}>
+              အကူအညီလိုပါက အောက်ပါအတိုင်း ဆက်သွယ်နိုင်ပါတယ်👇
+            </p>
 
-        <a href={SUPPORT.telegramUrl} target="_blank" rel="noopener noreferrer" className="ext-link">
-          💬 Telegram: {SUPPORT.telegram}
-        </a>
+            <a href={SUPPORT.telegramUrl} target="_blank" rel="noopener noreferrer" className="ext-link">
+              💬 Telegram: {SUPPORT.telegram}
+            </a>
 
-        {SUPPORT.phones.map((phone) => (
-          <a key={phone} href={`tel:${phone}`} className="ext-link">
-            📱 {phone}
-          </a>
-        ))}
+            {SUPPORT.phones.map((phone) => (
+              <a key={phone} href={`tel:${phone}`} className="ext-link">
+                📱 {phone}
+              </a>
+            ))}
+          </div>
+        </div>
       </Card>
 
-      <MessageBubble icon="🔧">
+      <MessageBubble step={2}>
         Key ချိတ်မရပါက အော်ဒါ နံပါတ် ရွေးပြီး တင်ပြပါ — Admin စစ်ပြီး key အသစ် ထုတ်ပေးပါမည်
         (အဟောင်း key အလိုအလျောက် ပိတ်ပါမည်)။
       </MessageBubble>
