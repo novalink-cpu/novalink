@@ -27,7 +27,7 @@ export function OrdersPage() {
               <InfoRow icon="📋" label="Order ID" value={order.id} />
               {order.orderType === 'renew' && <InfoRow icon="🔄" label="အမျိုးအစား" value="သက်တမ်းတိုင်" />}
               <InfoRow icon="📦" label="Package" value={order.packageLabel} />
-              <InfoRow icon="💰" label="ငွေ" value={`${order.amount.toLocaleString()} MMK`} />
+              <InfoRow icon="💰" label="Amount" value={`${order.amount.toLocaleString()} MMK`} />
               <InfoRow
                 icon="📌"
                 label="Status"
